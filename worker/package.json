@@ -1,0 +1,15 @@
+{
+  "name": "snapbug-worker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^3.1.1",
+    "wrangler": "^4.14.4"
+  }
+}
