@@ -1,6 +1,7 @@
 /* global chrome */
 import { createAnnotator } from './modules/canvas-annotator.js'
 import { createToolbarState, COLORS, WIDTHS } from './modules/toolbar.js'
+import { createCropState, normalizeCropRegion } from './modules/crop.js'
 
 const baseCanvas = document.getElementById('base-canvas')
 const overlayCanvas = document.getElementById('overlay-canvas')
@@ -12,6 +13,7 @@ const canvasWrapper = document.getElementById('canvas-wrapper')
 
 const annotator = createAnnotator()
 const toolbar = createToolbarState()
+const cropState = createCropState()
 
 // --- State ---
 let isDrawing = false
@@ -77,9 +79,53 @@ function canvasCoords(e) {
   }
 }
 
+// --- Crop helpers ---
+function renderCropOverlay(region) {
+  const norm = normalizeCropRegion(region)
+  overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height)
+  // Dim everything
+  overlayCtx.fillStyle = 'rgba(0, 0, 0, 0.5)'
+  overlayCtx.fillRect(0, 0, overlayCanvas.width, overlayCanvas.height)
+  if (norm) {
+    // Clear the selected region
+    overlayCtx.clearRect(norm.x, norm.y, norm.w, norm.h)
+    // Border
+    overlayCtx.strokeStyle = '#4361ee'
+    overlayCtx.lineWidth = 2
+    overlayCtx.strokeRect(norm.x, norm.y, norm.w, norm.h)
+  }
+}
+
+function applyCrop(region) {
+  const norm = normalizeCropRegion(region)
+  if (!norm) return
+
+  // Extract cropped image data from base canvas
+  const imageData = baseCtx.getImageData(norm.x, norm.y, norm.w, norm.h)
+
+  // Resize canvases
+  baseCanvas.width = norm.w
+  baseCanvas.height = norm.h
+  overlayCanvas.width = norm.w
+  overlayCanvas.height = norm.h
+
+  // Put cropped image
+  baseCtx.putImageData(imageData, 0, 0)
+
+  // Clear annotations after crop
+  annotator.setActions([])
+  annotator.render(overlayCtx)
+  statusEl.textContent = `Cropped to ${norm.w} × ${norm.h}`
+}
+
 // --- Mouse handlers ---
 overlayCanvas.addEventListener('mousedown', (e) => {
   const pos = canvasCoords(e)
+
+  if (toolbar.getTool() === 'crop') {
+    cropState.start(pos.x, pos.y)
+    return
+  }
 
   if (toolbar.getTool() === 'text') {
     showTextInput(pos)
@@ -95,8 +141,15 @@ overlayCanvas.addEventListener('mousedown', (e) => {
 })
 
 overlayCanvas.addEventListener('mousemove', (e) => {
-  if (!isDrawing) return
   const pos = canvasCoords(e)
+
+  if (toolbar.getTool() === 'crop' && cropState.isActive()) {
+    cropState.update(pos.x, pos.y)
+    renderCropOverlay(cropState.getRegion())
+    return
+  }
+
+  if (!isDrawing) return
 
   if (toolbar.getTool() === 'pen') {
     penPoints.push(pos)
@@ -126,9 +179,21 @@ overlayCanvas.addEventListener('mousemove', (e) => {
 })
 
 overlayCanvas.addEventListener('mouseup', (e) => {
+  const pos = canvasCoords(e)
+
+  if (toolbar.getTool() === 'crop' && cropState.isActive()) {
+    cropState.update(pos.x, pos.y)
+    const region = cropState.confirm()
+    if (region) {
+      applyCrop(region)
+    } else {
+      annotator.render(overlayCtx)
+    }
+    return
+  }
+
   if (!isDrawing) return
   isDrawing = false
-  const pos = canvasCoords(e)
 
   if (toolbar.getTool() === 'pen' && penPoints.length >= 2) {
     annotator.addAction({
@@ -161,10 +226,23 @@ overlayCanvas.addEventListener('mouseup', (e) => {
 })
 
 overlayCanvas.addEventListener('mouseleave', () => {
+  if (toolbar.getTool() === 'crop' && cropState.isActive()) {
+    cropState.cancel()
+    annotator.render(overlayCtx)
+    return
+  }
   if (isDrawing) {
     isDrawing = false
     penPoints = []
     dragStart = null
+    annotator.render(overlayCtx)
+  }
+})
+
+// Escape cancels crop
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && cropState.isActive()) {
+    cropState.cancel()
     annotator.render(overlayCtx)
   }
 })
