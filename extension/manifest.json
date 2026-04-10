@@ -23,5 +23,14 @@
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
+  },
+  "commands": {
+    "capture-screenshot": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
+      },
+      "description": "Capture visible tab and open annotation editor"
+    }
   }
 }
