@@ -25,18 +25,19 @@
         <button class="tool-btn" id="undo-btn" title="Undo (Ctrl+Z)">&#8630;</button>
         <button class="tool-btn" id="clear-btn" title="Clear All">&#10005;</button>
       </div>
+      <div class="toolbar-spacer"></div>
+      <div class="upload-section" id="upload-section">
+        <div id="upload-result" style="display:none;">
+          <span id="upload-url"></span>
+          <button id="copy-again-btn" class="copy-btn">Copy again</button>
+        </div>
+        <button id="upload-btn" class="upload-btn">Upload</button>
+      </div>
     </div>
     <div class="canvas-wrapper" id="canvas-wrapper">
       <canvas id="base-canvas"></canvas>
       <canvas id="overlay-canvas"></canvas>
       <textarea id="text-input" style="display:none;"></textarea>
-    </div>
-    <div class="upload-section">
-      <button id="upload-btn" class="upload-btn">Upload Annotated Screenshot</button>
-      <div id="upload-result" style="display:none;">
-        <p id="upload-url"></p>
-        <button id="copy-again-btn" class="copy-btn">Copy again</button>
-      </div>
     </div>
     <p id="annotate-status">Loading screenshot...</p>
   </div>
