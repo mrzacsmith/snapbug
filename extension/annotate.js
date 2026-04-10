@@ -26,6 +26,8 @@ const history = createHistory((actions) => {
 let isDrawing = false
 let penPoints = []
 let dragStart = null
+let pendingPageUrl = ''
+let pendingTimestamp = ''
 
 // --- Build toolbar UI ---
 const toolsContainer = document.getElementById('tools')
@@ -324,28 +326,34 @@ textInput.addEventListener('keydown', (e) => {
   }
 })
 
-// --- Load screenshot ---
-chrome.storage.local.get('pendingScreenshot', ({ pendingScreenshot }) => {
-  if (!pendingScreenshot) {
-    statusEl.textContent = 'No screenshot found. Capture one first.'
-    return
-  }
+// --- Load screenshot + metadata ---
+chrome.storage.local.get(
+  ['pendingScreenshot', 'pendingPageUrl', 'pendingTimestamp'],
+  ({ pendingScreenshot, pendingPageUrl: pageUrl, pendingTimestamp: timestamp }) => {
+    if (!pendingScreenshot) {
+      statusEl.textContent = 'No screenshot found. Capture one first.'
+      return
+    }
 
-  const img = new Image()
-  img.onload = () => {
-    baseCanvas.width = img.naturalWidth
-    baseCanvas.height = img.naturalHeight
-    overlayCanvas.width = img.naturalWidth
-    overlayCanvas.height = img.naturalHeight
-    baseCtx.drawImage(img, 0, 0)
-    statusEl.textContent = `Screenshot loaded (${img.naturalWidth} × ${img.naturalHeight})`
-    chrome.storage.local.remove('pendingScreenshot')
+    pendingPageUrl = pageUrl || ''
+    pendingTimestamp = timestamp || ''
+
+    const img = new Image()
+    img.onload = () => {
+      baseCanvas.width = img.naturalWidth
+      baseCanvas.height = img.naturalHeight
+      overlayCanvas.width = img.naturalWidth
+      overlayCanvas.height = img.naturalHeight
+      baseCtx.drawImage(img, 0, 0)
+      statusEl.textContent = `Screenshot loaded (${img.naturalWidth} × ${img.naturalHeight})`
+      chrome.storage.local.remove(['pendingScreenshot', 'pendingPageUrl', 'pendingTimestamp'])
+    }
+    img.onerror = () => {
+      statusEl.textContent = 'Failed to load screenshot.'
+    }
+    img.src = pendingScreenshot
   }
-  img.onerror = () => {
-    statusEl.textContent = 'Failed to load screenshot.'
-  }
-  img.src = pendingScreenshot
-})
+)
 
 // --- Upload ---
 const uploadBtn = document.getElementById('upload-btn')
@@ -374,7 +382,11 @@ uploadBtn.addEventListener('click', async () => {
     const blob = await flattenCanvases(baseCanvas, overlayCanvas)
     const { url } = await uploadScreenshot(blob, settings)
 
-    const clipboardText = formatClipboardOutput({ imageUrl: url })
+    const clipboardText = formatClipboardOutput({
+      imageUrl: url,
+      pageUrl: pendingPageUrl,
+      timestamp: pendingTimestamp,
+    })
     await copyToClipboard(clipboardText)
     lastClipboardText = clipboardText
 
