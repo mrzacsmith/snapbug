@@ -277,6 +277,59 @@ body {
   outline: none;
 }
 
+.upload-section {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.upload-btn {
+  padding: 10px 24px;
+  background: #4361ee;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.upload-btn:hover {
+  background: #3a56d4;
+}
+
+.upload-btn:disabled {
+  background: #555;
+  cursor: not-allowed;
+}
+
+#upload-result {
+  margin-top: 12px;
+  background: #16213e;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+#upload-url {
+  font-size: 13px;
+  word-break: break-all;
+  color: #4ade80;
+  margin-bottom: 8px;
+}
+
+.copy-btn {
+  padding: 6px 14px;
+  background: #333;
+  color: #e0e0e0;
+  border: 1px solid #555;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.copy-btn:hover {
+  background: #444;
+}
+
 #annotate-status {
   margin-top: 12px;
   font-size: 13px;

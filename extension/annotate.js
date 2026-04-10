@@ -3,6 +3,8 @@ import { createAnnotator } from './modules/canvas-annotator.js'
 import { createToolbarState, COLORS, WIDTHS } from './modules/toolbar.js'
 import { createCropState, normalizeCropRegion } from './modules/crop.js'
 import { createHistory } from './modules/history.js'
+import { uploadScreenshot, flattenCanvases } from './modules/upload.js'
+import { formatClipboardOutput, copyToClipboard } from './modules/output.js'
 
 const baseCanvas = document.getElementById('base-canvas')
 const overlayCanvas = document.getElementById('overlay-canvas')
@@ -343,6 +345,55 @@ chrome.storage.local.get('pendingScreenshot', ({ pendingScreenshot }) => {
     statusEl.textContent = 'Failed to load screenshot.'
   }
   img.src = pendingScreenshot
+})
+
+// --- Upload ---
+const uploadBtn = document.getElementById('upload-btn')
+const uploadResult = document.getElementById('upload-result')
+const uploadUrlEl = document.getElementById('upload-url')
+const copyAgainBtn = document.getElementById('copy-again-btn')
+let lastClipboardText = ''
+
+uploadBtn.addEventListener('click', async () => {
+  uploadBtn.disabled = true
+  uploadBtn.textContent = 'Uploading...'
+  statusEl.textContent = ''
+
+  try {
+    const settings = await new Promise((resolve) => {
+      chrome.storage.local.get(['workerUrl', 'apiKey'], resolve)
+    })
+
+    if (!settings.workerUrl || !settings.apiKey) {
+      statusEl.textContent = 'Configure Worker URL and API key in settings first.'
+      uploadBtn.disabled = false
+      uploadBtn.textContent = 'Upload Annotated Screenshot'
+      return
+    }
+
+    const blob = await flattenCanvases(baseCanvas, overlayCanvas)
+    const { url } = await uploadScreenshot(blob, settings)
+
+    const clipboardText = formatClipboardOutput({ imageUrl: url })
+    await copyToClipboard(clipboardText)
+    lastClipboardText = clipboardText
+
+    uploadUrlEl.textContent = url
+    uploadResult.style.display = 'block'
+    statusEl.textContent = 'Uploaded! URL copied to clipboard.'
+  } catch (err) {
+    statusEl.textContent = `Upload failed: ${err.message}`
+  } finally {
+    uploadBtn.disabled = false
+    uploadBtn.textContent = 'Upload Annotated Screenshot'
+  }
+})
+
+copyAgainBtn.addEventListener('click', async () => {
+  if (lastClipboardText) {
+    await copyToClipboard(lastClipboardText)
+    statusEl.textContent = 'Copied to clipboard!'
+  }
 })
 
 // Export for use by other modules
