@@ -19,7 +19,10 @@ function makeMockCtx() {
     translate: vi.fn(),
     rotate: vi.fn(),
     setLineDash: vi.fn(),
+    arc: vi.fn(),
     canvas: { width: 800, height: 600 },
+    textAlign: 'start',
+    textBaseline: 'alphabetic',
     lineWidth: 2,
     strokeStyle: '#ff0000',
     fillStyle: '#ff0000',
@@ -119,6 +122,31 @@ describe('createAnnotator', () => {
     const annotator = createAnnotator()
     annotator.addAction({ type: 'rect', x: 10, y: 10, w: 2, h: 2, color: '#ff0000', width: 2 })
     expect(annotator.getActions()).toHaveLength(0)
+  })
+
+  it('adds a number action', () => {
+    const annotator = createAnnotator()
+    annotator.addAction({
+      type: 'number',
+      x: 100, y: 200,
+      num: 1,
+      color: '#ff0000',
+      size: 24,
+    })
+    expect(annotator.getActions()).toHaveLength(1)
+    expect(annotator.getActions()[0].type).toBe('number')
+    expect(annotator.getActions()[0].num).toBe(1)
+  })
+
+  it('renders number actions with fillText and fill (circle)', () => {
+    const annotator = createAnnotator()
+    annotator.addAction({ type: 'number', x: 50, y: 50, num: 3, color: '#ff0000', size: 24 })
+    const ctx = makeMockCtx()
+    annotator.render(ctx)
+    // Should draw circle (beginPath + arc or fill) and number text (fillText)
+    expect(ctx.beginPath).toHaveBeenCalled()
+    expect(ctx.fill).toHaveBeenCalled()
+    expect(ctx.fillText).toHaveBeenCalled()
   })
 
   it('renders clears the canvas before drawing', () => {

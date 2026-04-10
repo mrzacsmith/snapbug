@@ -54,6 +54,9 @@ function renderAction(ctx, action) {
     case 'text':
       renderText(ctx, action)
       break
+    case 'number':
+      renderNumber(ctx, action)
+      break
   }
 }
 
@@ -130,5 +133,27 @@ function renderText(ctx, { x, y, text, color, fontSize }) {
   // Text
   ctx.fillStyle = color
   ctx.fillText(text, x, y)
+  ctx.restore()
+}
+
+function renderNumber(ctx, { x, y, num, color, size }) {
+  const radius = size / 2
+
+  ctx.save()
+
+  // Filled circle
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.arc(x, y, radius, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Number text (white, centered)
+  const fontSize = Math.round(size * 0.6)
+  ctx.fillStyle = '#ffffff'
+  ctx.font = `bold ${fontSize}px sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(String(num), x, y)
+
   ctx.restore()
 }
