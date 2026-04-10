@@ -9,8 +9,13 @@
 <body>
   <div class="popup-container">
     <h1>SnapBug</h1>
+    <div id="unconfigured-warning" style="display:none;">
+      <p>Please configure your Worker URL and API key before capturing.</p>
+      <a href="#" id="open-settings">Open Settings</a>
+    </div>
     <button id="capture-btn">Capture Screenshot</button>
-    <p id="status"></p>
+    <p id="status-msg"></p>
+    <a href="#" id="settings-link" class="settings-link">Settings</a>
   </div>
   <script src="popup.js"></script>
 </body>
