@@ -2,6 +2,7 @@
 import { createAnnotator } from './modules/canvas-annotator.js'
 import { createToolbarState, COLORS, WIDTHS } from './modules/toolbar.js'
 import { createCropState, normalizeCropRegion } from './modules/crop.js'
+import { createHistory } from './modules/history.js'
 
 const baseCanvas = document.getElementById('base-canvas')
 const overlayCanvas = document.getElementById('overlay-canvas')
@@ -14,6 +15,10 @@ const canvasWrapper = document.getElementById('canvas-wrapper')
 const annotator = createAnnotator()
 const toolbar = createToolbarState()
 const cropState = createCropState()
+const history = createHistory((actions) => {
+  annotator.setActions(actions)
+  annotator.render(overlayCtx)
+})
 
 // --- State ---
 let isDrawing = false
@@ -66,6 +71,24 @@ WIDTHS.forEach((w, i) => {
     toolbar.setWidth(w.value)
   })
   widthsContainer.appendChild(btn)
+})
+
+// --- Undo/Clear buttons ---
+document.getElementById('undo-btn').addEventListener('click', () => history.undo())
+document.getElementById('clear-btn').addEventListener('click', () => history.clear())
+
+// --- Keyboard shortcuts ---
+document.addEventListener('keydown', (e) => {
+  // Suppress when text input is focused
+  if (document.activeElement === textInput) return
+
+  if (e.ctrlKey && e.shiftKey && e.key === 'Z') {
+    e.preventDefault()
+    history.redo()
+  } else if (e.ctrlKey && e.key === 'z') {
+    e.preventDefault()
+    history.undo()
+  }
 })
 
 // --- Coordinate transform ---
@@ -196,14 +219,14 @@ overlayCanvas.addEventListener('mouseup', (e) => {
   isDrawing = false
 
   if (toolbar.getTool() === 'pen' && penPoints.length >= 2) {
-    annotator.addAction({
+    history.push({
       type: 'pen',
       points: [...penPoints],
       color: toolbar.getColor(),
       width: toolbar.getWidth(),
     })
   } else if (toolbar.getTool() === 'arrow' && dragStart) {
-    annotator.addAction({
+    history.push({
       type: 'arrow',
       startX: dragStart.x, startY: dragStart.y,
       endX: pos.x, endY: pos.y,
@@ -211,7 +234,7 @@ overlayCanvas.addEventListener('mouseup', (e) => {
       width: toolbar.getWidth(),
     })
   } else if (toolbar.getTool() === 'rect' && dragStart) {
-    annotator.addAction({
+    history.push({
       type: 'rect',
       x: dragStart.x, y: dragStart.y,
       w: pos.x - dragStart.x, h: pos.y - dragStart.y,
@@ -275,7 +298,7 @@ function commitText() {
   const x = parseFloat(textInput.style.left) * scaleX
   const y = parseFloat(textInput.style.top) * scaleY
 
-  annotator.addAction({
+  history.push({
     type: 'text',
     x, y,
     text,
