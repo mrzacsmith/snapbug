@@ -8,11 +8,21 @@
 </head>
 <body>
   <div class="annotate-container">
-    <div class="canvas-wrapper">
+    <div class="toolbar" id="toolbar">
+      <div class="tool-group">
+        <button class="tool-btn active" data-tool="pen" title="Pen">&#9998;</button>
+        <button class="tool-btn" data-tool="arrow" title="Arrow">&#10148;</button>
+        <button class="tool-btn" data-tool="rect" title="Rectangle">&#9634;</button>
+        <button class="tool-btn" data-tool="text" title="Text">T</button>
+      </div>
+    </div>
+    <div class="canvas-wrapper" id="canvas-wrapper">
       <canvas id="base-canvas"></canvas>
+      <canvas id="overlay-canvas"></canvas>
+      <textarea id="text-input" style="display:none;"></textarea>
     </div>
     <p id="annotate-status">Loading screenshot...</p>
   </div>
-  <script src="annotate.js"></script>
+  <script type="module" src="annotate.js"></script>
 </body>
 </html>
