@@ -33,6 +33,20 @@ curl https://snapbug.<your-subdomain>.workers.dev/
 # {"ok":true}
 ```
 
+### 1b. Set up R2 lifecycle rule (optional)
+
+To auto-delete screenshots older than 180 days (keeps storage within free tier):
+
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com) > R2 > `screenshots` bucket
+2. Click **Settings** > **Object lifecycle rules**
+3. Add a rule:
+   - **Rule name**: `auto-delete-180d`
+   - **Action**: Delete
+   - **Condition**: Objects older than **180 days**
+4. Save
+
+> This cannot be configured via `wrangler.toml` — it must be done in the dashboard.
+
 ### 2. Install the Extension
 
 1. Open `chrome://extensions` in Chrome
