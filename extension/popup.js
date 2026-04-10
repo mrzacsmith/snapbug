@@ -1,23 +1,47 @@
 const captureBtn = document.getElementById('capture-btn')
-const status = document.getElementById('status')
+const statusMsg = document.getElementById('status-msg')
+const warning = document.getElementById('unconfigured-warning')
+const openSettingsLink = document.getElementById('open-settings')
+const settingsLink = document.getElementById('settings-link')
+
+function openSettings() {
+  chrome.runtime.openOptionsPage()
+}
+
+openSettingsLink.addEventListener('click', (e) => {
+  e.preventDefault()
+  openSettings()
+})
+
+settingsLink.addEventListener('click', (e) => {
+  e.preventDefault()
+  openSettings()
+})
+
+// Check if configured on popup open
+chrome.storage.local.get(['workerUrl', 'apiKey'], (result) => {
+  if (!result.workerUrl || !result.apiKey) {
+    warning.style.display = 'block'
+    captureBtn.disabled = true
+  }
+})
 
 captureBtn.addEventListener('click', async () => {
   captureBtn.disabled = true
-  status.textContent = 'Capturing...'
+  statusMsg.textContent = 'Capturing...'
 
   chrome.runtime.sendMessage({ action: 'capture' }, (response) => {
     if (chrome.runtime.lastError) {
-      status.textContent = `Error: ${chrome.runtime.lastError.message}`
+      statusMsg.textContent = `Error: ${chrome.runtime.lastError.message}`
       captureBtn.disabled = false
       return
     }
     if (response?.error) {
-      status.textContent = `Error: ${response.error}`
+      statusMsg.textContent = `Error: ${response.error}`
       captureBtn.disabled = false
       return
     }
-    status.textContent = 'Screenshot captured!'
-    // Close popup after short delay so user sees the status
+    statusMsg.textContent = 'Screenshot captured!'
     setTimeout(() => window.close(), 500)
   })
 })
