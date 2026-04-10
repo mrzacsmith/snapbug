@@ -54,8 +54,17 @@ export default {
         return jsonResponse({ error: 'Missing image field' }, 400)
       }
 
-      const key = generateKey()
+      if (image.type !== 'image/png') {
+        return jsonResponse({ error: 'Only PNG uploads are accepted' }, 400)
+      }
+
       const arrayBuffer = await image.arrayBuffer()
+      const MAX_SIZE = 5 * 1024 * 1024
+      if (arrayBuffer.byteLength > MAX_SIZE) {
+        return jsonResponse({ error: 'File exceeds 5MB size limit' }, 400)
+      }
+
+      const key = generateKey()
 
       await env.SCREENSHOTS.put(key, arrayBuffer, {
         httpMetadata: { contentType: 'image/png' },

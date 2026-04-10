@@ -123,6 +123,50 @@ describe('POST /upload', () => {
     const res = await worker.fetch(req, makeEnv())
     expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*')
   })
+
+  it('returns 400 for JPEG content type', async () => {
+    const blob = new Blob([new Uint8Array(100)], { type: 'image/jpeg' })
+    const form = new FormData()
+    form.append('image', blob, 'screenshot.jpg')
+    const req = makeRequest('POST', '/upload', {
+      headers: { 'X-API-Key': 'test-key' },
+      body: form,
+    })
+    const res = await worker.fetch(req, makeEnv())
+    expect(res.status).toBe(400)
+    const json = await res.json()
+    expect(json.error).toMatch(/png/i)
+  })
+
+  it('returns 400 for WebP content type', async () => {
+    const blob = new Blob([new Uint8Array(100)], { type: 'image/webp' })
+    const form = new FormData()
+    form.append('image', blob, 'screenshot.webp')
+    const req = makeRequest('POST', '/upload', {
+      headers: { 'X-API-Key': 'test-key' },
+      body: form,
+    })
+    const res = await worker.fetch(req, makeEnv())
+    expect(res.status).toBe(400)
+    const json = await res.json()
+    expect(json.error).toMatch(/png/i)
+  })
+
+  it('returns 400 for file over 5MB', async () => {
+    const bigBlob = pngBlob(5 * 1024 * 1024 + 1)
+    const req = makeUploadRequest('test-key', bigBlob)
+    const res = await worker.fetch(req, makeEnv())
+    expect(res.status).toBe(400)
+    const json = await res.json()
+    expect(json.error).toMatch(/5\s*MB|size/i)
+  })
+
+  it('accepts file exactly at 5MB', async () => {
+    const exactBlob = pngBlob(5 * 1024 * 1024)
+    const req = makeUploadRequest('test-key', exactBlob)
+    const res = await worker.fetch(req, makeEnv())
+    expect(res.status).toBe(200)
+  })
 })
 
 describe('GET /<key>', () => {
