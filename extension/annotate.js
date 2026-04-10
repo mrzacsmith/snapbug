@@ -159,6 +159,19 @@ overlayCanvas.addEventListener('mousedown', (e) => {
     return
   }
 
+  if (toolbar.getTool() === 'number') {
+    const nextNum = history.getActions().filter(a => a.type === 'number').length + 1
+    const size = Math.max(20, toolbar.getWidth() * 6)
+    history.push({
+      type: 'number',
+      x: pos.x, y: pos.y,
+      num: nextNum,
+      color: toolbar.getColor(),
+      size,
+    })
+    return
+  }
+
   isDrawing = true
   if (toolbar.getTool() === 'pen') {
     penPoints = [pos]
