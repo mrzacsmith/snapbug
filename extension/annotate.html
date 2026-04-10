@@ -9,12 +9,16 @@
 <body>
   <div class="annotate-container">
     <div class="toolbar" id="toolbar">
-      <div class="tool-group">
+      <div class="tool-group" id="tools">
         <button class="tool-btn active" data-tool="pen" title="Pen">&#9998;</button>
         <button class="tool-btn" data-tool="arrow" title="Arrow">&#10148;</button>
         <button class="tool-btn" data-tool="rect" title="Rectangle">&#9634;</button>
         <button class="tool-btn" data-tool="text" title="Text">T</button>
       </div>
+      <div class="separator"></div>
+      <div class="tool-group" id="colors"></div>
+      <div class="separator"></div>
+      <div class="tool-group" id="widths"></div>
     </div>
     <div class="canvas-wrapper" id="canvas-wrapper">
       <canvas id="base-canvas"></canvas>

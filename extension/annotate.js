@@ -1,5 +1,6 @@
 /* global chrome */
 import { createAnnotator } from './modules/canvas-annotator.js'
+import { createToolbarState, COLORS, WIDTHS } from './modules/toolbar.js'
 
 const baseCanvas = document.getElementById('base-canvas')
 const overlayCanvas = document.getElementById('overlay-canvas')
@@ -10,22 +11,59 @@ const textInput = document.getElementById('text-input')
 const canvasWrapper = document.getElementById('canvas-wrapper')
 
 const annotator = createAnnotator()
+const toolbar = createToolbarState()
 
 // --- State ---
-let currentTool = 'pen'
-let currentColor = '#ff0000'
-let currentWidth = 2
 let isDrawing = false
 let penPoints = []
 let dragStart = null
 
-// --- Tool selection ---
-document.querySelectorAll('.tool-btn').forEach((btn) => {
+// --- Build toolbar UI ---
+const toolsContainer = document.getElementById('tools')
+const colorsContainer = document.getElementById('colors')
+const widthsContainer = document.getElementById('widths')
+
+// Tool buttons (already in HTML)
+toolsContainer.querySelectorAll('.tool-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
-    document.querySelector('.tool-btn.active')?.classList.remove('active')
+    toolsContainer.querySelector('.tool-btn.active')?.classList.remove('active')
     btn.classList.add('active')
-    currentTool = btn.dataset.tool
+    toolbar.setTool(btn.dataset.tool)
   })
+})
+
+// Color swatches
+COLORS.forEach((c, i) => {
+  const swatch = document.createElement('button')
+  swatch.className = `color-swatch${i === 0 ? ' active' : ''}`
+  swatch.style.background = c.value
+  swatch.title = c.label
+  swatch.dataset.color = c.value
+  swatch.addEventListener('click', () => {
+    colorsContainer.querySelector('.color-swatch.active')?.classList.remove('active')
+    swatch.classList.add('active')
+    toolbar.setColor(c.value)
+  })
+  colorsContainer.appendChild(swatch)
+})
+
+// Width buttons
+WIDTHS.forEach((w, i) => {
+  const btn = document.createElement('button')
+  btn.className = `width-btn${i === 0 ? ' active' : ''}`
+  btn.title = w.label
+  btn.dataset.width = w.value
+  // Visual indicator: a line of the given width
+  const line = document.createElement('span')
+  line.className = 'width-line'
+  line.style.height = `${w.value}px`
+  btn.appendChild(line)
+  btn.addEventListener('click', () => {
+    widthsContainer.querySelector('.width-btn.active')?.classList.remove('active')
+    btn.classList.add('active')
+    toolbar.setWidth(w.value)
+  })
+  widthsContainer.appendChild(btn)
 })
 
 // --- Coordinate transform ---
@@ -43,13 +81,13 @@ function canvasCoords(e) {
 overlayCanvas.addEventListener('mousedown', (e) => {
   const pos = canvasCoords(e)
 
-  if (currentTool === 'text') {
+  if (toolbar.getTool() === 'text') {
     showTextInput(pos)
     return
   }
 
   isDrawing = true
-  if (currentTool === 'pen') {
+  if (toolbar.getTool() === 'pen') {
     penPoints = [pos]
   } else {
     dragStart = pos
@@ -60,29 +98,29 @@ overlayCanvas.addEventListener('mousemove', (e) => {
   if (!isDrawing) return
   const pos = canvasCoords(e)
 
-  if (currentTool === 'pen') {
+  if (toolbar.getTool() === 'pen') {
     penPoints.push(pos)
     annotator.renderPreview(overlayCtx, {
       type: 'pen',
       points: penPoints,
-      color: currentColor,
-      width: currentWidth,
+      color: toolbar.getColor(),
+      width: toolbar.getWidth(),
     })
-  } else if (currentTool === 'arrow') {
+  } else if (toolbar.getTool() === 'arrow') {
     annotator.renderPreview(overlayCtx, {
       type: 'arrow',
       startX: dragStart.x, startY: dragStart.y,
       endX: pos.x, endY: pos.y,
-      color: currentColor,
-      width: currentWidth,
+      color: toolbar.getColor(),
+      width: toolbar.getWidth(),
     })
-  } else if (currentTool === 'rect') {
+  } else if (toolbar.getTool() === 'rect') {
     annotator.renderPreview(overlayCtx, {
       type: 'rect',
       x: dragStart.x, y: dragStart.y,
       w: pos.x - dragStart.x, h: pos.y - dragStart.y,
-      color: currentColor,
-      width: currentWidth,
+      color: toolbar.getColor(),
+      width: toolbar.getWidth(),
     })
   }
 })
@@ -92,28 +130,28 @@ overlayCanvas.addEventListener('mouseup', (e) => {
   isDrawing = false
   const pos = canvasCoords(e)
 
-  if (currentTool === 'pen' && penPoints.length >= 2) {
+  if (toolbar.getTool() === 'pen' && penPoints.length >= 2) {
     annotator.addAction({
       type: 'pen',
       points: [...penPoints],
-      color: currentColor,
-      width: currentWidth,
+      color: toolbar.getColor(),
+      width: toolbar.getWidth(),
     })
-  } else if (currentTool === 'arrow' && dragStart) {
+  } else if (toolbar.getTool() === 'arrow' && dragStart) {
     annotator.addAction({
       type: 'arrow',
       startX: dragStart.x, startY: dragStart.y,
       endX: pos.x, endY: pos.y,
-      color: currentColor,
-      width: currentWidth,
+      color: toolbar.getColor(),
+      width: toolbar.getWidth(),
     })
-  } else if (currentTool === 'rect' && dragStart) {
+  } else if (toolbar.getTool() === 'rect' && dragStart) {
     annotator.addAction({
       type: 'rect',
       x: dragStart.x, y: dragStart.y,
       w: pos.x - dragStart.x, h: pos.y - dragStart.y,
-      color: currentColor,
-      width: currentWidth,
+      color: toolbar.getColor(),
+      width: toolbar.getWidth(),
     })
   }
 
@@ -140,8 +178,8 @@ function showTextInput(pos) {
   textInput.style.display = 'block'
   textInput.style.left = `${pos.x * scaleX}px`
   textInput.style.top = `${pos.y * scaleY}px`
-  textInput.style.color = currentColor
-  textInput.style.fontSize = `${Math.max(14, currentWidth * 4)}px`
+  textInput.style.color = toolbar.getColor()
+  textInput.style.fontSize = `${Math.max(14, toolbar.getWidth() * 4)}px`
   textInput.value = ''
   textInput.focus()
 }
@@ -163,8 +201,8 @@ function commitText() {
     type: 'text',
     x, y,
     text,
-    color: currentColor,
-    fontSize: Math.max(14, currentWidth * 4),
+    color: toolbar.getColor(),
+    fontSize: Math.max(14, toolbar.getWidth() * 4),
   })
 
   textInput.style.display = 'none'
@@ -208,11 +246,4 @@ chrome.storage.local.get('pendingScreenshot', ({ pendingScreenshot }) => {
 
 // Export for use by other modules
 window.snapbugAnnotator = annotator
-window.snapbugState = {
-  get currentColor() { return currentColor },
-  set currentColor(v) { currentColor = v },
-  get currentWidth() { return currentWidth },
-  set currentWidth(v) { currentWidth = v },
-  get currentTool() { return currentTool },
-  set currentTool(v) { currentTool = v },
-}
+window.snapbugToolbar = toolbar
