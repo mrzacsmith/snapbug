@@ -81,64 +81,6 @@ body {
   margin-top: 10px;
 }
 
-/* Options */
-.options-container {
-  max-width: 400px;
-  margin: 40px auto;
-  padding: 24px;
-}
-
-.options-container h1 {
-  font-size: 22px;
-  margin-bottom: 20px;
-  color: #ffffff;
-}
-
-.options-container label {
-  display: block;
-  font-size: 13px;
-  margin-bottom: 4px;
-  color: #ccc;
-}
-
-.options-container input {
-  width: 100%;
-  padding: 8px 10px;
-  margin-bottom: 14px;
-  background: #16213e;
-  border: 1px solid #333;
-  border-radius: 4px;
-  color: #e0e0e0;
-  font-size: 14px;
-}
-
-.options-container input:focus {
-  outline: none;
-  border-color: #4361ee;
-}
-
-#save-btn {
-  width: 100%;
-  padding: 10px;
-  background: #4361ee;
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-#save-btn:hover {
-  background: #3a56d4;
-}
-
-#settings-status {
-  margin-top: 10px;
-  font-size: 12px;
-  color: #4ade80;
-}
-
 /* Annotate */
 .annotate-container {
   display: flex;
