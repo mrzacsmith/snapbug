@@ -5,6 +5,7 @@ import { createCropState, normalizeCropRegion } from './modules/crop.js'
 import { createHistory } from './modules/history.js'
 import { uploadScreenshot, flattenCanvases } from './modules/upload.js'
 import { formatClipboardOutput, formatUrlOnly, copyToClipboard } from './modules/output.js'
+import { createToast } from './modules/toast.js'
 
 const baseCanvas = document.getElementById('base-canvas')
 const overlayCanvas = document.getElementById('overlay-canvas')
@@ -14,6 +15,7 @@ const statusEl = document.getElementById('annotate-status')
 const textInput = document.getElementById('text-input')
 const canvasWrapper = document.getElementById('canvas-wrapper')
 
+const toast = createToast(document.getElementById('toast-container'))
 const annotator = createAnnotator()
 const toolbar = createToolbarState()
 const cropState = createCropState()
@@ -396,7 +398,7 @@ uploadBtn.addEventListener('click', async () => {
     })
 
     if (!settings.workerUrl || !settings.apiKey) {
-      statusEl.textContent = 'Configure Worker URL and API key in settings first.'
+      toast.show('API key needs to be updated — check Settings', { type: 'error' })
       uploadBtn.disabled = false
       uploadBtn.textContent = 'Upload Annotated Screenshot'
       return
@@ -421,7 +423,10 @@ uploadBtn.addEventListener('click', async () => {
     actionsAtUpload = history.getActions().length
     uploadBtn.style.display = 'none'
   } catch (err) {
-    statusEl.textContent = `Upload failed: ${err.message}`
+    const msg = err.message.includes('401')
+      ? 'API key expired — update in Settings'
+      : `Upload failed: ${err.message}`
+    toast.show(msg, { type: 'error' })
   } finally {
     uploadBtn.disabled = false
     uploadBtn.textContent = 'Upload Annotated Screenshot'
