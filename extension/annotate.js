@@ -20,6 +20,9 @@ const cropState = createCropState()
 const history = createHistory((actions) => {
   annotator.setActions(actions)
   annotator.render(overlayCtx)
+  if (hasUploaded && actions.length !== actionsAtUpload) {
+    document.getElementById('upload-btn').style.display = ''
+  }
 })
 
 // --- State ---
@@ -28,6 +31,8 @@ let penPoints = []
 let dragStart = null
 let pendingPageUrl = ''
 let pendingTimestamp = ''
+let hasUploaded = false
+let actionsAtUpload = 0
 
 // --- Build toolbar UI ---
 const toolsContainer = document.getElementById('tools')
@@ -143,6 +148,9 @@ function applyCrop(region) {
   annotator.setActions([])
   annotator.render(overlayCtx)
   statusEl.textContent = `Cropped to ${norm.w} × ${norm.h}`
+  if (hasUploaded) {
+    document.getElementById('upload-btn').style.display = ''
+  }
 }
 
 // --- Mouse handlers ---
@@ -409,6 +417,9 @@ uploadBtn.addEventListener('click', async () => {
     uploadUrlEl.textContent = url
     uploadResult.style.display = 'block'
     statusEl.textContent = 'Uploaded! URL copied to clipboard.'
+    hasUploaded = true
+    actionsAtUpload = history.getActions().length
+    uploadBtn.style.display = 'none'
   } catch (err) {
     statusEl.textContent = `Upload failed: ${err.message}`
   } finally {
