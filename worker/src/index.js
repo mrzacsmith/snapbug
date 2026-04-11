@@ -1,15 +1,23 @@
-function corsHeaders() {
+const ALLOWED_ORIGINS = [
+  'chrome-extension://aafdgjcfokgognkkhhcmdajmkelghoob',
+]
+
+function isAllowedOrigin(origin) {
+  return ALLOWED_ORIGINS.includes(origin)
+}
+
+function corsHeaders(origin) {
   return {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': origin || '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
   }
 }
 
-function jsonResponse(body, status = 200) {
+function jsonResponse(body, status = 200, origin) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+    headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
   })
 }
 
@@ -27,9 +35,13 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url)
     const method = request.method
+    const origin = request.headers.get('Origin')
 
     if (method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders() })
+      if (!isAllowedOrigin(origin)) {
+        return new Response(null, { status: 403 })
+      }
+      return new Response(null, { status: 204, headers: corsHeaders(origin) })
     }
 
     if (method === 'GET' && url.pathname === '/') {
@@ -37,31 +49,37 @@ export default {
     }
 
     if (method === 'POST' && url.pathname === '/upload') {
+      if (origin && !isAllowedOrigin(origin)) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
       const apiKey = request.headers.get('X-API-Key')
       if (!apiKey || apiKey !== env.API_KEY) {
-        return jsonResponse({ error: 'Unauthorized' }, 401)
+        return jsonResponse({ error: 'Unauthorized' }, 401, origin)
       }
 
       let formData
       try {
         formData = await request.formData()
       } catch {
-        return jsonResponse({ error: 'Invalid form data' }, 400)
+        return jsonResponse({ error: 'Invalid form data' }, 400, origin)
       }
 
       const image = formData.get('image')
       if (!image) {
-        return jsonResponse({ error: 'Missing image field' }, 400)
+        return jsonResponse({ error: 'Missing image field' }, 400, origin)
       }
 
       if (image.type !== 'image/png') {
-        return jsonResponse({ error: 'Only PNG uploads are accepted' }, 400)
+        return jsonResponse({ error: 'Only PNG uploads are accepted' }, 400, origin)
       }
 
       const arrayBuffer = await image.arrayBuffer()
       const MAX_SIZE = 5 * 1024 * 1024
       if (arrayBuffer.byteLength > MAX_SIZE) {
-        return jsonResponse({ error: 'File exceeds 5MB size limit' }, 400)
+        return jsonResponse({ error: 'File exceeds 5MB size limit' }, 400, origin)
       }
 
       const key = generateKey()
@@ -71,7 +89,7 @@ export default {
       })
 
       const imageUrl = `${url.origin}/${key}`
-      return jsonResponse({ url: imageUrl, key })
+      return jsonResponse({ url: imageUrl, key }, 200, origin)
     }
 
     if (method === 'GET') {

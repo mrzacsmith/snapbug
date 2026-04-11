@@ -57,19 +57,30 @@ describe('GET /', () => {
     expect(json).toEqual({ ok: true })
   })
 
-  it('includes CORS header', async () => {
+  it('includes open CORS header for GET', async () => {
     const res = await worker.fetch(makeRequest('GET', '/'), makeEnv())
     expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*')
   })
 })
 
 describe('OPTIONS', () => {
-  it('returns 204 with CORS headers', async () => {
-    const res = await worker.fetch(makeRequest('OPTIONS', '/upload'), makeEnv())
+  it('returns 204 with CORS headers for allowed origin', async () => {
+    const req = makeRequest('OPTIONS', '/upload', {
+      headers: { 'Origin': 'chrome-extension://aafdgjcfokgognkkhhcmdajmkelghoob' },
+    })
+    const res = await worker.fetch(req, makeEnv())
     expect(res.status).toBe(204)
-    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*')
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('chrome-extension://aafdgjcfokgognkkhhcmdajmkelghoob')
     expect(res.headers.get('Access-Control-Allow-Methods')).toContain('POST')
     expect(res.headers.get('Access-Control-Allow-Headers')).toContain('X-API-Key')
+  })
+
+  it('returns 403 for disallowed origin on upload', async () => {
+    const req = makeRequest('OPTIONS', '/upload', {
+      headers: { 'Origin': 'https://evil.com' },
+    })
+    const res = await worker.fetch(req, makeEnv())
+    expect(res.status).toBe(403)
   })
 })
 
@@ -113,15 +124,26 @@ describe('POST /upload', () => {
     expect(env.SCREENSHOTS.put).toHaveBeenCalledOnce()
   })
 
-  it('includes CORS header on success', async () => {
-    const res = await worker.fetch(makeUploadRequest('test-key', pngBlob()), makeEnv())
-    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*')
+  it('includes CORS header for extension origin on success', async () => {
+    const form = new FormData()
+    form.append('image', pngBlob(), 'screenshot.png')
+    const req = makeRequest('POST', '/upload', {
+      headers: { 'X-API-Key': 'test-key', 'Origin': 'chrome-extension://aafdgjcfokgognkkhhcmdajmkelghoob' },
+      body: form,
+    })
+    const res = await worker.fetch(req, makeEnv())
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('chrome-extension://aafdgjcfokgognkkhhcmdajmkelghoob')
   })
 
-  it('includes CORS header on auth failure', async () => {
-    const req = makeRequest('POST', '/upload')
+  it('returns 403 for disallowed origin on upload', async () => {
+    const form = new FormData()
+    form.append('image', pngBlob(), 'screenshot.png')
+    const req = makeRequest('POST', '/upload', {
+      headers: { 'X-API-Key': 'test-key', 'Origin': 'https://evil.com' },
+      body: form,
+    })
     const res = await worker.fetch(req, makeEnv())
-    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*')
+    expect(res.status).toBe(403)
   })
 
   it('returns 400 for JPEG content type', async () => {
