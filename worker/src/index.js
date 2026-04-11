@@ -106,7 +106,7 @@ export default {
       return new Response(object.body, {
         headers: {
           'Content-Type': 'image/png',
-          'Cache-Control': 'public, max-age=31536000, immutable',
+          'Cache-Control': 'public, max-age=5184000',
           ...corsHeaders(),
         },
       })

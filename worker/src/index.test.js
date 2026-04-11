@@ -202,7 +202,7 @@ describe('GET /<key>', () => {
     const res = await worker.fetch(makeRequest('GET', `/${key}`), env)
     expect(res.status).toBe(200)
     expect(res.headers.get('Content-Type')).toBe('image/png')
-    expect(res.headers.get('Cache-Control')).toBe('public, max-age=31536000, immutable')
+    expect(res.headers.get('Cache-Control')).toBe('public, max-age=5184000')
     expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*')
   })
 
