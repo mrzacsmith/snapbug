@@ -101,6 +101,16 @@ Captured: 2026-04-10 14:32 UTC
 
 Paste directly into a GitHub issue or comment.
 
+## Git Setup
+
+After cloning, enable the auto-version-bump hook:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+This automatically increments the patch version in `manifest.json` on each commit that changes extension files.
+
 ## Local Development
 
 ### Worker
