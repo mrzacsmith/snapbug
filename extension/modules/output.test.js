@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { formatClipboardOutput } from './output.js'
+import * as outputModule from './output.js'
+const { formatClipboardOutput } = outputModule
 
 describe('formatClipboardOutput', () => {
   it('formats markdown image tag only', () => {
@@ -35,5 +36,50 @@ describe('formatClipboardOutput', () => {
     expect(lines[0]).toBe('![screenshot](https://snap.workers.dev/2026/04/10/abc.png)')
     expect(lines[1]).toBe('URL: https://app.example.com/dashboard')
     expect(lines[2]).toBe('Captured: 2026-04-10 14:32 UTC')
+  })
+
+  it('does not include undefined values in output', () => {
+    const result = formatClipboardOutput({
+      imageUrl: 'https://snap.workers.dev/2026/04/10/abc.png',
+      pageUrl: undefined,
+      timestamp: undefined,
+    })
+    expect(result).not.toContain('undefined')
+    expect(result).not.toContain('URL:')
+    expect(result).not.toContain('Captured:')
+  })
+
+  it('does not include empty string values in output', () => {
+    const result = formatClipboardOutput({
+      imageUrl: 'https://snap.workers.dev/2026/04/10/abc.png',
+      pageUrl: '',
+      timestamp: '',
+    })
+    expect(result).not.toContain('URL:')
+    expect(result).not.toContain('Captured:')
+  })
+})
+
+describe('copyToClipboard', () => {
+  it('is exported as a function', () => {
+    expect(typeof outputModule.copyToClipboard).toBe('function')
+  })
+})
+
+describe('formatUrlOnly', () => {
+  it('returns only the raw image URL', () => {
+    const result = outputModule.formatUrlOnly({
+      imageUrl: 'https://snap.workers.dev/2026/04/10/abc.png',
+      pageUrl: 'https://app.example.com/dashboard',
+      timestamp: '2026-04-10 14:32 UTC',
+    })
+    expect(result).toBe('https://snap.workers.dev/2026/04/10/abc.png')
+  })
+
+  it('returns the image URL even without metadata', () => {
+    const result = outputModule.formatUrlOnly({
+      imageUrl: 'https://snap.workers.dev/2026/04/10/abc.png',
+    })
+    expect(result).toBe('https://snap.workers.dev/2026/04/10/abc.png')
   })
 })
