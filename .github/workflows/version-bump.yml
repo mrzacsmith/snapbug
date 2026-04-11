@@ -1,0 +1,45 @@
+name: Auto-bump version
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'extension/**'
+      - '!extension/manifest.json'
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump patch version
+        run: |
+          CURRENT=$(node -e "console.log(require('./extension/manifest.json').version)")
+          MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT" | cut -d. -f2)
+          PATCH=$(echo "$CURRENT" | cut -d. -f3)
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+
+          node -e "
+          const fs = require('fs');
+          const m = JSON.parse(fs.readFileSync('extension/manifest.json', 'utf8'));
+          m.version = '$NEW_VERSION';
+          fs.writeFileSync('extension/manifest.json', JSON.stringify(m, null, 2) + '\n');
+          "
+
+          echo "Bumped version: $CURRENT -> $NEW_VERSION"
+          echo "NEW_VERSION=$NEW_VERSION" >> "$GITHUB_ENV"
+
+      - name: Commit and push
+        env:
+          VERSION: ${{ env.NEW_VERSION }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add extension/manifest.json
+          git commit -m "Bump version to ${VERSION} [skip ci]"
+          git push
