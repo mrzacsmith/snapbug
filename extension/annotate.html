@@ -11,15 +11,15 @@
     <div id="toast-container" class="toast-container"></div>
     <div class="toolbar" id="toolbar">
       <div class="tool-group">
-        <button class="tool-btn" data-tool="crop" title="Crop">&#9986;</button>
+        <button class="tool-btn" data-tool="crop" data-tooltip="Crop">&#9986;</button>
       </div>
       <div class="separator"></div>
       <div class="tool-group" id="tools">
-        <button class="tool-btn active" data-tool="pen" title="Pen">&#9998;</button>
-        <button class="tool-btn" data-tool="arrow" title="Arrow">&#10148;</button>
-        <button class="tool-btn" data-tool="rect" title="Rectangle">&#9634;</button>
-        <button class="tool-btn" data-tool="text" title="Text">T</button>
-        <button class="tool-btn" data-tool="number" title="Number">#</button>
+        <button class="tool-btn active" data-tool="pen" data-tooltip="Pen">&#9998;</button>
+        <button class="tool-btn" data-tool="arrow" data-tooltip="Arrow">&#10148;</button>
+        <button class="tool-btn" data-tool="rect" data-tooltip="Rectangle">&#9634;</button>
+        <button class="tool-btn" data-tool="text" data-tooltip="Text">T</button>
+        <button class="tool-btn" data-tool="number" data-tooltip="Number">#</button>
       </div>
       <div class="separator"></div>
       <div class="tool-group" id="colors"></div>
@@ -27,15 +27,15 @@
       <div class="tool-group" id="widths"></div>
       <div class="separator"></div>
       <div class="tool-group">
-        <button class="tool-btn" id="undo-btn" title="Undo (Ctrl+Z)">&#8630;</button>
-        <button class="tool-btn" id="clear-btn" title="Clear All">&#10005;</button>
+        <button class="tool-btn" id="undo-btn" data-tooltip="Undo (Ctrl+Z)">&#8630;</button>
+        <button class="tool-btn" id="clear-btn" data-tooltip="Clear All">&#10005;</button>
       </div>
       <div class="toolbar-spacer"></div>
       <div class="upload-section" id="upload-section">
         <div id="upload-result" style="display:none;">
           <span id="upload-url"></span>
           <button id="copy-again-btn" class="copy-btn">Copy</button>
-          <button id="copy-url-btn" class="copy-btn" title="Copy URL only">&#127760;</button>
+          <button id="copy-url-btn" class="copy-btn" data-tooltip="Copy URL only">&#127760;</button>
         </div>
         <button id="upload-btn" class="upload-btn">Upload</button>
       </div>
