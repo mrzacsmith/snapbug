@@ -41,10 +41,11 @@ const toolsContainer = document.getElementById('tools')
 const colorsContainer = document.getElementById('colors')
 const widthsContainer = document.getElementById('widths')
 
-// Tool buttons (already in HTML)
-toolsContainer.querySelectorAll('.tool-btn').forEach((btn) => {
+// Tool buttons (already in HTML) — includes crop button outside #tools
+const allToolBtns = document.querySelectorAll('.tool-btn[data-tool]')
+allToolBtns.forEach((btn) => {
   btn.addEventListener('click', () => {
-    toolsContainer.querySelector('.tool-btn.active')?.classList.remove('active')
+    allToolBtns.forEach(b => b.classList.remove('active'))
     btn.classList.add('active')
     toolbar.setTool(btn.dataset.tool)
   })
