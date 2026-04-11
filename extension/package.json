@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "zip": "node ../scripts/zip.js",
+    "icons:dev": "node ../scripts/swap-icons.js dev",
+    "icons:prod": "node ../scripts/swap-icons.js prod"
   },
   "devDependencies": {
     "vitest": "^3.1.1"
