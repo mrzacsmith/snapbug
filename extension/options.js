@@ -32,3 +32,8 @@ form.addEventListener('submit', (e) => {
     setTimeout(() => { settingsStatus.textContent = '' }, 2000)
   })
 })
+
+// Display version
+const versionDisplay = document.getElementById('version-display')
+const manifest = chrome.runtime.getManifest()
+versionDisplay.textContent = `v${manifest.version}`
