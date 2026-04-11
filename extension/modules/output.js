@@ -5,6 +5,10 @@ export function formatClipboardOutput({ imageUrl, pageUrl, timestamp }) {
   return output
 }
 
+export function formatUrlOnly({ imageUrl }) {
+  return imageUrl
+}
+
 export async function copyToClipboard(text) {
   await navigator.clipboard.writeText(text)
 }

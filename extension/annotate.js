@@ -4,7 +4,7 @@ import { createToolbarState, COLORS, WIDTHS } from './modules/toolbar.js'
 import { createCropState, normalizeCropRegion } from './modules/crop.js'
 import { createHistory } from './modules/history.js'
 import { uploadScreenshot, flattenCanvases } from './modules/upload.js'
-import { formatClipboardOutput, copyToClipboard } from './modules/output.js'
+import { formatClipboardOutput, formatUrlOnly, copyToClipboard } from './modules/output.js'
 
 const baseCanvas = document.getElementById('base-canvas')
 const overlayCanvas = document.getElementById('overlay-canvas')
@@ -373,7 +373,9 @@ const uploadBtn = document.getElementById('upload-btn')
 const uploadResult = document.getElementById('upload-result')
 const uploadUrlEl = document.getElementById('upload-url')
 const copyAgainBtn = document.getElementById('copy-again-btn')
+const copyUrlBtn = document.getElementById('copy-url-btn')
 let lastClipboardText = ''
+let lastImageUrl = ''
 
 uploadBtn.addEventListener('click', async () => {
   uploadBtn.disabled = true
@@ -402,6 +404,7 @@ uploadBtn.addEventListener('click', async () => {
     })
     await copyToClipboard(clipboardText)
     lastClipboardText = clipboardText
+    lastImageUrl = url
 
     uploadUrlEl.textContent = url
     uploadResult.style.display = 'block'
@@ -418,6 +421,13 @@ copyAgainBtn.addEventListener('click', async () => {
   if (lastClipboardText) {
     await copyToClipboard(lastClipboardText)
     statusEl.textContent = 'Copied to clipboard!'
+  }
+})
+
+copyUrlBtn.addEventListener('click', async () => {
+  if (lastImageUrl) {
+    await copyToClipboard(formatUrlOnly({ imageUrl: lastImageUrl }))
+    statusEl.textContent = 'URL copied!'
   }
 })
 
