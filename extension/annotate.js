@@ -117,7 +117,7 @@ function renderCropOverlay(region) {
     // Clear the selected region
     overlayCtx.clearRect(norm.x, norm.y, norm.w, norm.h)
     // Border
-    overlayCtx.strokeStyle = '#4361ee'
+    overlayCtx.strokeStyle = '#C09E5A'
     overlayCtx.lineWidth = 2
     overlayCtx.strokeRect(norm.x, norm.y, norm.w, norm.h)
   }
