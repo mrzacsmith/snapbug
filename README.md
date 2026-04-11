@@ -131,6 +131,16 @@ npm test           # 68 tests
 
 After code changes, reload the extension at `chrome://extensions` (click the refresh icon).
 
+## Rotating the API Key
+
+```bash
+cd worker
+npx wrangler secret put API_KEY
+# type the new key when prompted
+```
+
+The old key stops working immediately. Have the team update the key in extension settings.
+
 ## Updating
 
 ```bash
