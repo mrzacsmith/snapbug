@@ -291,7 +291,7 @@ describe('GET /<key> (video)', () => {
 describe('GET /watch/<key>', () => {
   it('returns HTML player page for video key', async () => {
     const env = makeEnv()
-    env.SCREENSHOTS._store.set('2026/04/10/test.webm', {
+    env.VIDEOS._store.set('2026/04/10/test.webm', {
       body: new Uint8Array(10),
       opts: { httpMetadata: { contentType: 'video/webm' } },
     })

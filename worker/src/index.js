@@ -103,7 +103,7 @@ export default {
       const key = url.pathname.slice(7)
       if (!key) return jsonResponse({ error: 'Not found' }, 404)
 
-      const object = await env.SCREENSHOTS.get(key)
+      const object = await env.VIDEOS.get(key)
       if (!object) return jsonResponse({ error: 'Not found' }, 404)
 
       const videoSrc = `${url.origin}/${key}`
