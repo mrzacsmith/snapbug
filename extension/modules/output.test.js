@@ -85,11 +85,11 @@ describe('formatUrlOnly', () => {
 })
 
 describe('formatVideoClipboardOutput', () => {
-  it('formats video link (not image embed)', () => {
+  it('formats video link using /watch/ player URL', () => {
     const result = formatVideoClipboardOutput({
-      videoUrl: 'https://snap.workers.dev/2026/04/10/abc.webm',
+      videoUrl: 'https://snap.workers.dev/watch/2026/04/10/abc.webm',
     })
-    expect(result).toContain('https://snap.workers.dev/2026/04/10/abc.webm')
+    expect(result).toContain('/watch/')
     expect(result).not.toContain('![')
   })
 

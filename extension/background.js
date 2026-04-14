@@ -1,10 +1,38 @@
 import { createRecorder } from './modules/recorder.js'
+import { uploadVideo, dataUrlToBlob } from './modules/upload.js'
+import { formatVideoClipboardOutput } from './modules/output.js'
 
 const recorder = createRecorder(chrome)
 
+async function uploadAndStoreResult(dataUrl, pageUrl) {
+  const blob = dataUrlToBlob(dataUrl)
+  const { workerUrl, apiKey } = await new Promise((resolve) => {
+    chrome.storage.local.get(['workerUrl', 'apiKey'], resolve)
+  })
+
+  const timestamp = new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC')
+  const result = await uploadVideo(blob, { workerUrl, apiKey })
+  const watchUrl = result.url.replace(/\/([^/]+\.webm)$/, '/watch/$1')
+  const clipboardText = formatVideoClipboardOutput({ videoUrl: watchUrl, pageUrl, timestamp })
+
+  chrome.storage.local.set({
+    lastVideoUrl: watchUrl,
+    lastVideoClipboard: clipboardText,
+  })
+  chrome.storage.local.remove('pendingVideo')
+
+  return { watchUrl, clipboardText }
+}
+
 recorder.onAutoStop = (dataUrl) => {
-  chrome.storage.local.set({ pendingVideo: dataUrl }, () => {
-    // Auto-stop: video data stored, user can retrieve it
+  chrome.storage.local.get('recordingPageUrl', (result) => {
+    uploadAndStoreResult(dataUrl, result.recordingPageUrl).then(({ watchUrl }) => {
+      chrome.action.setBadgeText({ text: 'DONE' })
+      chrome.action.setBadgeBackgroundColor({ color: '#38a169' })
+      setTimeout(() => chrome.action.setBadgeText({ text: '' }), 3000)
+    }).catch(() => {
+      chrome.storage.local.set({ pendingVideo: dataUrl })
+    })
   })
 }
 
@@ -40,11 +68,17 @@ chrome.commands.onCommand.addListener((command) => {
   if (command === 'toggle-recording') {
     if (recorder.isRecording()) {
       recorder.stop().then((dataUrl) => {
-        chrome.storage.local.set({ pendingVideo: dataUrl })
+        chrome.storage.local.get('recordingPageUrl', (result) => {
+          uploadAndStoreResult(dataUrl, result.recordingPageUrl).catch(() => {
+            chrome.storage.local.set({ pendingVideo: dataUrl })
+          })
+        })
       })
     } else {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        recorder.start(tabs[0].id).catch(() => {})
+        const tab = tabs[0]
+        chrome.storage.local.set({ recordingPageUrl: tab.url || '' })
+        recorder.start(tab.id).catch(() => {})
       })
     }
   }
@@ -61,7 +95,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.action === 'start-recording') {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      recorder.start(tabs[0].id)
+      const tab = tabs[0]
+      chrome.storage.local.set({ recordingPageUrl: tab.url || '' })
+      recorder.start(tab.id)
         .then(() => sendResponse({ success: true }))
         .catch((err) => sendResponse({ error: err.message }))
     })
@@ -71,8 +107,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'stop-recording') {
     recorder.stop()
       .then((dataUrl) => {
-        chrome.storage.local.set({ pendingVideo: dataUrl }, () => {
-          sendResponse({ success: true, dataUrl })
+        chrome.storage.local.get('recordingPageUrl', (result) => {
+          uploadAndStoreResult(dataUrl, result.recordingPageUrl)
+            .then(({ watchUrl, clipboardText }) => {
+              sendResponse({ success: true, watchUrl, clipboardText })
+            })
+            .catch((err) => sendResponse({ error: err.message }))
         })
       })
       .catch((err) => sendResponse({ error: err.message }))

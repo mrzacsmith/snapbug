@@ -134,7 +134,7 @@ recordBtn.addEventListener('click', () => {
 
 stopBtn.addEventListener('click', () => {
   stopBtn.disabled = true
-  statusMsg.textContent = 'Stopping...'
+  statusMsg.textContent = 'Stopping & uploading...'
 
   chrome.runtime.sendMessage({ action: 'stop-recording' }, (response) => {
     hideRecordingUI()
@@ -143,6 +143,14 @@ stopBtn.addEventListener('click', () => {
       statusMsg.textContent = `Error: ${response.error}`
       return
     }
-    statusMsg.textContent = 'Video recorded!'
+    if (response?.clipboardText) {
+      navigator.clipboard.writeText(response.clipboardText).then(() => {
+        statusMsg.textContent = 'Video uploaded! Link copied.'
+      }).catch(() => {
+        statusMsg.textContent = 'Video uploaded!'
+      })
+    } else {
+      statusMsg.textContent = 'Video uploaded!'
+    }
   })
 })

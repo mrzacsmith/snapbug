@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { uploadScreenshot, uploadVideo } from './upload.js'
+import { uploadScreenshot, uploadVideo, dataUrlToBlob } from './upload.js'
 
 describe('uploadScreenshot', () => {
   let mockFetch
@@ -136,5 +136,21 @@ describe('uploadVideo', () => {
       onProgress,
     })
     expect(onProgress).toHaveBeenCalled()
+  })
+})
+
+describe('dataUrlToBlob', () => {
+  it('converts a data URL to a Blob with correct type', () => {
+    const dataUrl = 'data:video/webm;base64,AQID'
+    const blob = dataUrlToBlob(dataUrl)
+    expect(blob).toBeInstanceOf(Blob)
+    expect(blob.type).toBe('video/webm')
+    expect(blob.size).toBe(3)
+  })
+
+  it('converts a PNG data URL', () => {
+    const dataUrl = 'data:image/png;base64,AQID'
+    const blob = dataUrlToBlob(dataUrl)
+    expect(blob.type).toBe('image/png')
   })
 })
