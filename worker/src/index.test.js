@@ -3,24 +3,29 @@ import worker from './index.js'
 
 // --- helpers ---
 
-function makeEnv(apiKey = 'test-key') {
+function makeBucket() {
   const store = new Map()
   return {
+    put: vi.fn(async (key, body, opts) => {
+      store.set(key, { body, opts })
+    }),
+    get: vi.fn(async (key) => {
+      const entry = store.get(key)
+      if (!entry) return null
+      return {
+        body: entry.body,
+        httpMetadata: entry.opts?.httpMetadata || {},
+      }
+    }),
+    _store: store,
+  }
+}
+
+function makeEnv(apiKey = 'test-key') {
+  return {
     API_KEY: apiKey,
-    SCREENSHOTS: {
-      put: vi.fn(async (key, body, opts) => {
-        store.set(key, { body, opts })
-      }),
-      get: vi.fn(async (key) => {
-        const entry = store.get(key)
-        if (!entry) return null
-        return {
-          body: entry.body,
-          httpMetadata: entry.opts?.httpMetadata || {},
-        }
-      }),
-      _store: store,
-    },
+    SCREENSHOTS: makeBucket(),
+    VIDEOS: makeBucket(),
   }
 }
 
@@ -38,9 +43,17 @@ function pngBlob(sizeBytes = 100) {
   return new Blob([data], { type: 'image/png' })
 }
 
-function makeUploadRequest(apiKey, blob) {
+function webmBlob(sizeBytes = 100) {
+  const data = new Uint8Array(sizeBytes)
+  // WebM magic bytes (EBML header)
+  data[0] = 0x1a; data[1] = 0x45; data[2] = 0xdf; data[3] = 0xa3
+  return new Blob([data], { type: 'video/webm' })
+}
+
+function makeUploadRequest(apiKey, blob, fieldName = 'image') {
   const form = new FormData()
-  form.append('image', blob, 'screenshot.png')
+  const filename = blob.type === 'video/webm' ? 'recording.webm' : 'screenshot.png'
+  form.append(fieldName, blob, filename)
   return makeRequest('POST', '/upload', {
     headers: { 'X-API-Key': apiKey },
     body: form,
@@ -211,5 +224,66 @@ describe('GET /<key>', () => {
     expect(res.status).toBe(404)
     const json = await res.json()
     expect(json.error).toBeDefined()
+  })
+})
+
+describe('POST /upload (video)', () => {
+  it('stores WebM in VIDEOS bucket and returns url + key', async () => {
+    const env = makeEnv()
+    const req = makeUploadRequest('test-key', webmBlob())
+    const res = await worker.fetch(req, env)
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.url).toBeDefined()
+    expect(json.key).toMatch(/\.webm$/)
+    expect(env.VIDEOS.put).toHaveBeenCalledOnce()
+    expect(env.SCREENSHOTS.put).not.toHaveBeenCalled()
+  })
+
+  it('accepts video up to 100MB', async () => {
+    const env = makeEnv()
+    const blob = webmBlob(100 * 1024 * 1024)
+    const req = makeUploadRequest('test-key', blob)
+    const res = await worker.fetch(req, env)
+    expect(res.status).toBe(200)
+  })
+
+  it('rejects video over 100MB', async () => {
+    const blob = webmBlob(100 * 1024 * 1024 + 1)
+    const req = makeUploadRequest('test-key', blob)
+    const res = await worker.fetch(req, makeEnv())
+    expect(res.status).toBe(400)
+    const json = await res.json()
+    expect(json.error).toMatch(/100\s*MB|size/i)
+  })
+
+  it('rejects unsupported content types', async () => {
+    const blob = new Blob([new Uint8Array(100)], { type: 'video/mp4' })
+    const form = new FormData()
+    form.append('image', blob, 'recording.mp4')
+    const req = makeRequest('POST', '/upload', {
+      headers: { 'X-API-Key': 'test-key' },
+      body: form,
+    })
+    const res = await worker.fetch(req, makeEnv())
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('GET /<key> (video)', () => {
+  it('returns stored video with correct headers', async () => {
+    const env = makeEnv()
+    const uploadRes = await worker.fetch(makeUploadRequest('test-key', webmBlob(200)), env)
+    const { key } = await uploadRes.json()
+
+    const res = await worker.fetch(makeRequest('GET', `/${key}`), env)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('Content-Type')).toBe('video/webm')
+    expect(res.headers.get('Cache-Control')).toBe('public, max-age=1209600')
+  })
+
+  it('returns 404 for non-existent video key', async () => {
+    const res = await worker.fetch(makeRequest('GET', '/2026/01/01/nope.webm'), makeEnv())
+    expect(res.status).toBe(404)
   })
 })
