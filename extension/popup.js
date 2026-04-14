@@ -9,6 +9,7 @@ const videoResult = document.getElementById('video-result')
 const copyUrlBtn = document.getElementById('copy-url-btn')
 const copyMdBtn = document.getElementById('copy-md-btn')
 const audioCheckbox = document.getElementById('audio-checkbox')
+const consoleCheckbox = document.getElementById('console-checkbox')
 const statusMsg = document.getElementById('status-msg')
 const warning = document.getElementById('unconfigured-warning')
 const openSettingsLink = document.getElementById('open-settings')
@@ -34,13 +35,24 @@ updateBanner.addEventListener('click', (e) => {
   openSettings()
 })
 
-// Load audio preference
-chrome.storage.local.get('recordAudio', (result) => {
+// Load preferences and inject console capture if enabled
+chrome.storage.local.get(['recordAudio', 'captureConsole'], (result) => {
   audioCheckbox.checked = result.recordAudio || false
+  consoleCheckbox.checked = result.captureConsole || false
+  if (result.captureConsole) {
+    chrome.runtime.sendMessage({ action: 'inject-console' })
+  }
 })
 
 audioCheckbox.addEventListener('change', () => {
   chrome.storage.local.set({ recordAudio: audioCheckbox.checked })
+})
+
+consoleCheckbox.addEventListener('change', () => {
+  chrome.storage.local.set({ captureConsole: consoleCheckbox.checked })
+  chrome.runtime.sendMessage({
+    action: consoleCheckbox.checked ? 'inject-console' : 'remove-console'
+  })
 })
 
 // Check if configured on popup open
@@ -64,7 +76,7 @@ captureBtn.addEventListener('click', async () => {
   captureBtn.disabled = true
   statusMsg.textContent = 'Capturing...'
 
-  chrome.runtime.sendMessage({ action: 'capture' }, (response) => {
+  chrome.runtime.sendMessage({ action: 'capture', captureConsole: consoleCheckbox.checked }, (response) => {
     if (chrome.runtime.lastError) {
       statusMsg.textContent = `Error: ${chrome.runtime.lastError.message}`
       captureBtn.disabled = false
@@ -140,7 +152,7 @@ recordBtn.addEventListener('click', () => {
   recordBtn.disabled = true
   statusMsg.textContent = 'Starting recording...'
 
-  chrome.runtime.sendMessage({ action: 'start-recording', audio: audioCheckbox.checked }, (response) => {
+  chrome.runtime.sendMessage({ action: 'start-recording', audio: audioCheckbox.checked, captureConsole: consoleCheckbox.checked }, (response) => {
     if (response?.error) {
       statusMsg.textContent = `Error: ${response.error}`
       recordBtn.disabled = false

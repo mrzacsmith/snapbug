@@ -74,7 +74,13 @@ body {
   background: #1A1A1A;
 }
 
-.audio-toggle {
+.capture-options {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+
+.option-toggle {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -84,7 +90,7 @@ body {
   white-space: nowrap;
 }
 
-.audio-toggle input {
+.option-toggle input {
   cursor: pointer;
   accent-color: #C09E5A;
 }

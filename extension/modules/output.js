@@ -1,7 +1,8 @@
-export function formatClipboardOutput({ imageUrl, pageUrl, timestamp }) {
+export function formatClipboardOutput({ imageUrl, pageUrl, timestamp, consoleOutput }) {
   let output = `![screenshot](${imageUrl})`
   if (pageUrl) output += `\nURL: ${pageUrl}`
   if (timestamp) output += `\nCaptured: ${timestamp}`
+  if (consoleOutput) output += `\n${consoleOutput}`
   return output
 }
 
