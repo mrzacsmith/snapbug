@@ -2,9 +2,11 @@ import { createRecorder } from './modules/recorder.js'
 import { uploadVideo, dataUrlToBlob } from './modules/upload.js'
 import { formatVideoClipboardOutput } from './modules/output.js'
 import { injectCursorHighlight, removeCursorHighlight } from './modules/cursor-highlight.js'
+import { injectConsoleCapture, removeConsoleCapture, collectConsoleMessages, formatConsoleMessages } from './modules/console-capture.js'
 
 const recorder = createRecorder(chrome)
 let recordingTabId = null
+let consoleActive = false
 
 async function uploadAndStoreResult(dataUrl, pageUrl) {
   const blob = dataUrlToBlob(dataUrl)
@@ -27,8 +29,17 @@ async function uploadAndStoreResult(dataUrl, pageUrl) {
   return { watchUrl, clipboardText }
 }
 
-recorder.onAutoStop = (dataUrl) => {
+recorder.onAutoStop = async (dataUrl) => {
   if (recordingTabId) removeCursorHighlight(chrome, recordingTabId).catch(() => {})
+  if (consoleActive && recordingTabId) {
+    try {
+      const messages = await collectConsoleMessages(chrome, recordingTabId)
+      const output = formatConsoleMessages(messages)
+      if (output) chrome.storage.local.set({ pendingConsole: output })
+      await removeConsoleCapture(chrome, recordingTabId).catch(() => {})
+    } catch {}
+    consoleActive = false
+  }
   chrome.storage.local.get('recordingPageUrl', (result) => {
     uploadAndStoreResult(dataUrl, result.recordingPageUrl).then(({ watchUrl }) => {
       chrome.action.setBadgeText({ text: 'DONE' })
@@ -83,10 +94,12 @@ chrome.commands.onCommand.addListener((command) => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const tab = tabs[0]
         recordingTabId = tab.id
-        chrome.storage.local.get('recordAudio', (result) => {
+        chrome.storage.local.get(['recordAudio', 'captureConsole'], (result) => {
           const audio = result.recordAudio || false
+          consoleActive = result.captureConsole || false
           chrome.storage.local.set({ recordingPageUrl: tab.url || '' })
           injectCursorHighlight(chrome, tab.id).catch(() => {})
+          if (consoleActive) injectConsoleCapture(chrome, tab.id).catch(() => {})
           recorder.start(tab.id, { audio }).catch(() => {})
         })
       })
@@ -97,8 +110,23 @@ chrome.commands.onCommand.addListener((command) => {
 // Handle popup message
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'capture') {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      captureWithMetadata(tabs[0], sendResponse)
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      const tab = tabs[0]
+      let consoleOutput = ''
+
+      if (message.captureConsole) {
+        try {
+          const messages = await collectConsoleMessages(chrome, tab.id)
+          consoleOutput = formatConsoleMessages(messages)
+          await removeConsoleCapture(chrome, tab.id).catch(() => {})
+        } catch {}
+      }
+
+      if (consoleOutput) {
+        chrome.storage.local.set({ pendingConsole: consoleOutput })
+      }
+
+      captureWithMetadata(tab, sendResponse)
     })
     return true
   }
@@ -108,8 +136,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const tab = tabs[0]
       recordingTabId = tab.id
       const audio = message.audio !== undefined ? message.audio : false
-      chrome.storage.local.set({ recordingPageUrl: tab.url || '', recordAudio: audio })
+      consoleActive = message.captureConsole || false
+      chrome.storage.local.set({ recordingPageUrl: tab.url || '', recordAudio: audio, captureConsole: consoleActive })
       injectCursorHighlight(chrome, tab.id).catch(() => {})
+      if (consoleActive) injectConsoleCapture(chrome, tab.id).catch(() => {})
       recorder.start(tab.id, { audio })
         .then(() => sendResponse({ success: true }))
         .catch((err) => sendResponse({ error: err.message }))
@@ -120,17 +150,41 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'stop-recording') {
     if (recordingTabId) removeCursorHighlight(chrome, recordingTabId).catch(() => {})
     recorder.stop()
-      .then((dataUrl) => {
+      .then(async (dataUrl) => {
+        let consoleOutput = ''
+        if (consoleActive && recordingTabId) {
+          try {
+            const messages = await collectConsoleMessages(chrome, recordingTabId)
+            consoleOutput = formatConsoleMessages(messages)
+            await removeConsoleCapture(chrome, recordingTabId).catch(() => {})
+          } catch {}
+          consoleActive = false
+        }
         chrome.storage.local.get('recordingPageUrl', (result) => {
           uploadAndStoreResult(dataUrl, result.recordingPageUrl)
             .then(({ watchUrl, clipboardText }) => {
-              sendResponse({ success: true, watchUrl, clipboardText })
+              const fullClipboard = consoleOutput ? clipboardText + consoleOutput : clipboardText
+              sendResponse({ success: true, watchUrl, clipboardText: fullClipboard })
             })
             .catch((err) => sendResponse({ error: err.message }))
         })
       })
       .catch((err) => sendResponse({ error: err.message }))
     return true
+  }
+
+  if (message.action === 'inject-console') {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]) injectConsoleCapture(chrome, tabs[0].id).catch(() => {})
+    })
+    return false
+  }
+
+  if (message.action === 'remove-console') {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]) removeConsoleCapture(chrome, tabs[0].id).catch(() => {})
+    })
+    return false
   }
 
   if (message.action === 'recording-status') {
