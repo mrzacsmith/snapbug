@@ -22,6 +22,11 @@
       <p class="helper-text">Shared team key — ask HQ if you don't have it.</p>
       <input type="password" id="api-key" placeholder="Enter your shared API key" required>
 
+      <label for="openrouter-key">OpenRouter API Key <span class="optional">(optional)</span></label>
+      <p class="helper-text">For AI-powered console log summaries. Get a key at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a>.</p>
+      <p class="helper-text privacy-note">Console logs may contain sensitive data and will be sent to OpenRouter for summarization.</p>
+      <input type="password" id="openrouter-key" placeholder="sk-or-...">
+
       <button type="submit" id="save-btn">Save</button>
       <p id="settings-status"></p>
     </form>

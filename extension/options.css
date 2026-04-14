@@ -49,6 +49,26 @@ body {
   margin-bottom: 6px;
 }
 
+.helper-text a {
+  color: #C09E5A;
+  text-decoration: none;
+}
+
+.helper-text a:hover {
+  text-decoration: underline;
+}
+
+.privacy-note {
+  color: #e53e3e;
+  font-style: italic;
+}
+
+.optional {
+  font-size: 11px;
+  color: #666;
+  font-weight: 400;
+}
+
 .options-container input {
   width: 100%;
   padding: 10px 12px;
