@@ -1,6 +1,10 @@
 import { checkForUpdate } from './modules/version-check.js'
 
 const captureBtn = document.getElementById('capture-btn')
+const recordBtn = document.getElementById('record-btn')
+const recordingIndicator = document.getElementById('recording-indicator')
+const recTimer = document.getElementById('rec-timer')
+const stopBtn = document.getElementById('stop-btn')
 const statusMsg = document.getElementById('status-msg')
 const warning = document.getElementById('unconfigured-warning')
 const openSettingsLink = document.getElementById('open-settings')
@@ -31,6 +35,7 @@ chrome.storage.local.get(['workerUrl', 'apiKey'], (result) => {
   if (!result.workerUrl || !result.apiKey) {
     warning.style.display = 'block'
     captureBtn.disabled = true
+    recordBtn.disabled = true
   }
 })
 
@@ -59,5 +64,85 @@ captureBtn.addEventListener('click', async () => {
     }
     statusMsg.textContent = 'Screenshot captured!'
     setTimeout(() => window.close(), 500)
+  })
+})
+
+// --- Video Recording ---
+
+function formatTime(ms) {
+  const totalSeconds = Math.floor(ms / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes}:${String(seconds).padStart(2, '0')}`
+}
+
+let timerInterval = null
+
+function showRecordingUI() {
+  recordBtn.style.display = 'none'
+  captureBtn.style.display = 'none'
+  recordingIndicator.style.display = 'flex'
+}
+
+function hideRecordingUI() {
+  recordBtn.style.display = ''
+  captureBtn.style.display = ''
+  recordingIndicator.style.display = 'none'
+  recTimer.textContent = '0:00'
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
+}
+
+function startTimerPolling() {
+  timerInterval = setInterval(() => {
+    chrome.runtime.sendMessage({ action: 'recording-status' }, (response) => {
+      if (response?.isRecording) {
+        recTimer.textContent = formatTime(response.elapsed)
+      } else {
+        hideRecordingUI()
+      }
+    })
+  }, 500)
+}
+
+// Check recording status on popup open
+chrome.runtime.sendMessage({ action: 'recording-status' }, (response) => {
+  if (response?.isRecording) {
+    showRecordingUI()
+    recTimer.textContent = formatTime(response.elapsed)
+    startTimerPolling()
+  }
+})
+
+recordBtn.addEventListener('click', () => {
+  recordBtn.disabled = true
+  statusMsg.textContent = 'Starting recording...'
+
+  chrome.runtime.sendMessage({ action: 'start-recording' }, (response) => {
+    if (response?.error) {
+      statusMsg.textContent = `Error: ${response.error}`
+      recordBtn.disabled = false
+      return
+    }
+    statusMsg.textContent = ''
+    showRecordingUI()
+    startTimerPolling()
+  })
+})
+
+stopBtn.addEventListener('click', () => {
+  stopBtn.disabled = true
+  statusMsg.textContent = 'Stopping...'
+
+  chrome.runtime.sendMessage({ action: 'stop-recording' }, (response) => {
+    hideRecordingUI()
+    stopBtn.disabled = false
+    if (response?.error) {
+      statusMsg.textContent = `Error: ${response.error}`
+      return
+    }
+    statusMsg.textContent = 'Video recorded!'
   })
 })
