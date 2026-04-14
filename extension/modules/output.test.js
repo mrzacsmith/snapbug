@@ -116,3 +116,23 @@ describe('formatVideoClipboardOutput', () => {
     expect(result).toMatch(/expires|14 days/i)
   })
 })
+
+describe('formatVideoUrlOnly', () => {
+  it('returns only the video URL', () => {
+    const result = outputModule.formatVideoUrlOnly({
+      videoUrl: 'https://snap.workers.dev/watch/2026/04/10/abc.webm',
+      pageUrl: 'https://app.example.com/dashboard',
+      timestamp: '2026-04-10 14:32 UTC',
+    })
+    expect(result).toBe('https://snap.workers.dev/watch/2026/04/10/abc.webm')
+  })
+
+  it('returns the video URL without metadata', () => {
+    const result = outputModule.formatVideoUrlOnly({
+      videoUrl: 'https://snap.workers.dev/watch/2026/04/10/abc.webm',
+    })
+    expect(result).toBe('https://snap.workers.dev/watch/2026/04/10/abc.webm')
+    expect(result).not.toContain('URL:')
+    expect(result).not.toContain('expires')
+  })
+})
