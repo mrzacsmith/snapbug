@@ -98,6 +98,39 @@ export default {
       return jsonResponse({ url: imageUrl, key }, 200, origin)
     }
 
+    if (method === 'GET' && url.pathname.startsWith('/watch/')) {
+      const key = url.pathname.slice(7)
+      if (!key) return jsonResponse({ error: 'Not found' }, 404)
+
+      const object = await env.SCREENSHOTS.get(key)
+      if (!object) return jsonResponse({ error: 'Not found' }, 404)
+
+      const videoSrc = `${url.origin}/${key}`
+      const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapBug Recording</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; color: #fff; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+    video { max-width: 90vw; max-height: 80vh; border-radius: 8px; }
+    .notice { margin-top: 16px; padding: 8px 16px; background: #1a1a1a; border: 1px solid #333; border-radius: 6px; font-size: 13px; color: #888; }
+  </style>
+</head>
+<body>
+  <video src="${videoSrc}" controls autoplay></video>
+  <p class="notice">This video expires in 14 days.</p>
+</body>
+</html>`
+
+      return new Response(html, {
+        status: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      })
+    }
+
     if (method === 'GET') {
       const key = url.pathname.slice(1)
       if (!key) {
