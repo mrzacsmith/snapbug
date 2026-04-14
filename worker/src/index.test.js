@@ -287,3 +287,26 @@ describe('GET /<key> (video)', () => {
     expect(res.status).toBe(404)
   })
 })
+
+describe('GET /watch/<key>', () => {
+  it('returns HTML player page for video key', async () => {
+    const env = makeEnv()
+    env.SCREENSHOTS._store.set('2026/04/10/test.webm', {
+      body: new Uint8Array(10),
+      opts: { httpMetadata: { contentType: 'video/webm' } },
+    })
+
+    const res = await worker.fetch(makeRequest('GET', '/watch/2026/04/10/test.webm'), env)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('Content-Type')).toContain('text/html')
+    const html = await res.text()
+    expect(html).toContain('<video')
+    expect(html).toContain('2026/04/10/test.webm')
+    expect(html).toContain('14 days')
+  })
+
+  it('returns 404 for non-existent video', async () => {
+    const res = await worker.fetch(makeRequest('GET', '/watch/2026/01/01/nope.webm'), makeEnv())
+    expect(res.status).toBe(404)
+  })
+})
