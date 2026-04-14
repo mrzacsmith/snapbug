@@ -1,8 +1,10 @@
 import { createRecorder } from './modules/recorder.js'
 import { uploadVideo, dataUrlToBlob } from './modules/upload.js'
 import { formatVideoClipboardOutput } from './modules/output.js'
+import { injectCursorHighlight, removeCursorHighlight } from './modules/cursor-highlight.js'
 
 const recorder = createRecorder(chrome)
+let recordingTabId = null
 
 async function uploadAndStoreResult(dataUrl, pageUrl) {
   const blob = dataUrlToBlob(dataUrl)
@@ -26,6 +28,7 @@ async function uploadAndStoreResult(dataUrl, pageUrl) {
 }
 
 recorder.onAutoStop = (dataUrl) => {
+  if (recordingTabId) removeCursorHighlight(chrome, recordingTabId).catch(() => {})
   chrome.storage.local.get('recordingPageUrl', (result) => {
     uploadAndStoreResult(dataUrl, result.recordingPageUrl).then(({ watchUrl }) => {
       chrome.action.setBadgeText({ text: 'DONE' })
@@ -68,6 +71,7 @@ chrome.commands.onCommand.addListener((command) => {
 
   if (command === 'toggle-recording') {
     if (recorder.isRecording()) {
+      if (recordingTabId) removeCursorHighlight(chrome, recordingTabId).catch(() => {})
       recorder.stop().then((dataUrl) => {
         chrome.storage.local.get('recordingPageUrl', (result) => {
           uploadAndStoreResult(dataUrl, result.recordingPageUrl).catch(() => {
@@ -78,7 +82,9 @@ chrome.commands.onCommand.addListener((command) => {
     } else {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const tab = tabs[0]
+        recordingTabId = tab.id
         chrome.storage.local.set({ recordingPageUrl: tab.url || '' })
+        injectCursorHighlight(chrome, tab.id).catch(() => {})
         recorder.start(tab.id).catch(() => {})
       })
     }
@@ -97,7 +103,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'start-recording') {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs[0]
+      recordingTabId = tab.id
       chrome.storage.local.set({ recordingPageUrl: tab.url || '' })
+      injectCursorHighlight(chrome, tab.id).catch(() => {})
       recorder.start(tab.id)
         .then(() => sendResponse({ success: true }))
         .catch((err) => sendResponse({ error: err.message }))
@@ -106,6 +114,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.action === 'stop-recording') {
+    if (recordingTabId) removeCursorHighlight(chrome, recordingTabId).catch(() => {})
     recorder.stop()
       .then((dataUrl) => {
         chrome.storage.local.get('recordingPageUrl', (result) => {
