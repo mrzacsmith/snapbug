@@ -91,7 +91,7 @@ describe('createRecorder', () => {
     const recorder = createRecorder(chrome)
     await recorder.start(1)
     expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
-      { target: 'offscreen', action: 'start-recording', streamId: 'stream-123' },
+      { target: 'offscreen', action: 'start-recording', streamId: 'stream-123', audio: false },
       expect.any(Function)
     )
   })

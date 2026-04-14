@@ -83,9 +83,12 @@ chrome.commands.onCommand.addListener((command) => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const tab = tabs[0]
         recordingTabId = tab.id
-        chrome.storage.local.set({ recordingPageUrl: tab.url || '' })
-        injectCursorHighlight(chrome, tab.id).catch(() => {})
-        recorder.start(tab.id).catch(() => {})
+        chrome.storage.local.get('recordAudio', (result) => {
+          const audio = result.recordAudio || false
+          chrome.storage.local.set({ recordingPageUrl: tab.url || '' })
+          injectCursorHighlight(chrome, tab.id).catch(() => {})
+          recorder.start(tab.id, { audio }).catch(() => {})
+        })
       })
     }
   }
@@ -104,9 +107,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs[0]
       recordingTabId = tab.id
-      chrome.storage.local.set({ recordingPageUrl: tab.url || '' })
+      const audio = message.audio !== undefined ? message.audio : false
+      chrome.storage.local.set({ recordingPageUrl: tab.url || '', recordAudio: audio })
       injectCursorHighlight(chrome, tab.id).catch(() => {})
-      recorder.start(tab.id)
+      recorder.start(tab.id, { audio })
         .then(() => sendResponse({ success: true }))
         .catch((err) => sendResponse({ error: err.message }))
     })

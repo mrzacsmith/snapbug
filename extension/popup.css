@@ -48,10 +48,16 @@ body {
   cursor: not-allowed;
 }
 
-#record-btn {
-  width: 100%;
-  padding: 12px 16px;
+.record-row {
+  display: flex;
+  gap: 8px;
   margin-top: 8px;
+  align-items: center;
+}
+
+#record-btn {
+  flex: 1;
+  padding: 12px 16px;
   background: transparent;
   color: #C09E5A;
   border: 1px solid #C09E5A;
@@ -66,6 +72,21 @@ body {
 
 #record-btn:hover {
   background: #1A1A1A;
+}
+
+.audio-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #888;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.audio-toggle input {
+  cursor: pointer;
+  accent-color: #C09E5A;
 }
 
 #record-btn:disabled {
