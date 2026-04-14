@@ -17,6 +17,10 @@ export function formatVideoClipboardOutput({ videoUrl, pageUrl, timestamp }) {
   return output
 }
 
+export function formatVideoUrlOnly({ videoUrl }) {
+  return videoUrl
+}
+
 export async function copyToClipboard(text) {
   await navigator.clipboard.writeText(text)
 }

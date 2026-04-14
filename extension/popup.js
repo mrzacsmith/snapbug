@@ -5,6 +5,9 @@ const recordBtn = document.getElementById('record-btn')
 const recordingIndicator = document.getElementById('recording-indicator')
 const recTimer = document.getElementById('rec-timer')
 const stopBtn = document.getElementById('stop-btn')
+const videoResult = document.getElementById('video-result')
+const copyUrlBtn = document.getElementById('copy-url-btn')
+const copyMdBtn = document.getElementById('copy-md-btn')
 const statusMsg = document.getElementById('status-msg')
 const warning = document.getElementById('unconfigured-warning')
 const openSettingsLink = document.getElementById('open-settings')
@@ -116,6 +119,13 @@ chrome.runtime.sendMessage({ action: 'recording-status' }, (response) => {
   }
 })
 
+// Show last video result if available
+chrome.storage.local.get(['lastVideoUrl', 'lastVideoClipboard'], (result) => {
+  if (result.lastVideoUrl) {
+    showVideoResult(result.lastVideoUrl, result.lastVideoClipboard)
+  }
+})
+
 recordBtn.addEventListener('click', () => {
   recordBtn.disabled = true
   statusMsg.textContent = 'Starting recording...'
@@ -132,6 +142,32 @@ recordBtn.addEventListener('click', () => {
   })
 })
 
+let lastVideoUrl = null
+let lastClipboardText = null
+
+function showVideoResult(watchUrl, clipboardText) {
+  lastVideoUrl = watchUrl
+  lastClipboardText = clipboardText
+  videoResult.style.display = 'block'
+  statusMsg.textContent = ''
+}
+
+copyUrlBtn.addEventListener('click', () => {
+  if (lastVideoUrl) {
+    navigator.clipboard.writeText(lastVideoUrl).then(() => {
+      statusMsg.textContent = 'URL copied!'
+    })
+  }
+})
+
+copyMdBtn.addEventListener('click', () => {
+  if (lastClipboardText) {
+    navigator.clipboard.writeText(lastClipboardText).then(() => {
+      statusMsg.textContent = 'Markdown copied!'
+    })
+  }
+})
+
 stopBtn.addEventListener('click', () => {
   stopBtn.disabled = true
   statusMsg.textContent = 'Stopping & uploading...'
@@ -143,11 +179,11 @@ stopBtn.addEventListener('click', () => {
       statusMsg.textContent = `Error: ${response.error}`
       return
     }
-    if (response?.clipboardText) {
-      navigator.clipboard.writeText(response.clipboardText).then(() => {
-        statusMsg.textContent = 'Video uploaded! Link copied.'
+    if (response?.watchUrl) {
+      navigator.clipboard.writeText(response.watchUrl).then(() => {
+        showVideoResult(response.watchUrl, response.clipboardText)
       }).catch(() => {
-        statusMsg.textContent = 'Video uploaded!'
+        showVideoResult(response.watchUrl, response.clipboardText)
       })
     } else {
       statusMsg.textContent = 'Video uploaded!'
