@@ -50,6 +50,17 @@ export async function uploadVideo(blob, { workerUrl, apiKey, onProgress }) {
   return response.json()
 }
 
+export function dataUrlToBlob(dataUrl) {
+  const [header, base64] = dataUrl.split(',')
+  const mime = header.match(/:(.*?);/)[1]
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  return new Blob([bytes], { type: mime })
+}
+
 export function flattenCanvases(baseCanvas, overlayCanvas) {
   const canvas = document.createElement('canvas')
   canvas.width = baseCanvas.width
