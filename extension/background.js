@@ -3,10 +3,28 @@ import { uploadVideo, dataUrlToBlob } from './modules/upload.js'
 import { formatVideoClipboardOutput } from './modules/output.js'
 import { injectCursorHighlight, removeCursorHighlight } from './modules/cursor-highlight.js'
 import { injectConsoleCapture, removeConsoleCapture, collectConsoleMessages, formatConsoleMessages } from './modules/console-capture.js'
+import { summarizeConsole } from './modules/ai-summary.js'
 
 const recorder = createRecorder(chrome)
 let recordingTabId = null
 let consoleActive = false
+
+async function getConsoleOutput(tabId) {
+  const messages = await collectConsoleMessages(chrome, tabId)
+  const raw = formatConsoleMessages(messages)
+  if (!raw) return ''
+
+  const { openrouterKey } = await new Promise(resolve => {
+    chrome.storage.local.get('openrouterKey', resolve)
+  })
+
+  if (openrouterKey) {
+    const summary = await summarizeConsole(raw, openrouterKey)
+    if (summary) return `\nConsole Summary (AI):\n${summary}`
+  }
+
+  return raw
+}
 
 async function uploadAndStoreResult(dataUrl, pageUrl) {
   const blob = dataUrlToBlob(dataUrl)
@@ -111,18 +129,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'capture') {
     chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
       const tab = tabs[0]
-      let consoleOutput = ''
 
       if (message.captureConsole) {
         try {
-          const messages = await collectConsoleMessages(chrome, tab.id)
-          consoleOutput = formatConsoleMessages(messages)
+          const consoleOutput = await getConsoleOutput(tab.id)
+          if (consoleOutput) chrome.storage.local.set({ pendingConsole: consoleOutput })
           await removeConsoleCapture(chrome, tab.id).catch(() => {})
         } catch {}
-      }
-
-      if (consoleOutput) {
-        chrome.storage.local.set({ pendingConsole: consoleOutput })
       }
 
       captureWithMetadata(tab, sendResponse)

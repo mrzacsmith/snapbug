@@ -1,12 +1,14 @@
 const form = document.getElementById('settings-form')
 const workerUrlInput = document.getElementById('worker-url')
 const apiKeyInput = document.getElementById('api-key')
+const openrouterKeyInput = document.getElementById('openrouter-key')
 const settingsStatus = document.getElementById('settings-status')
 
 // Load saved settings on open
-chrome.storage.local.get(['workerUrl', 'apiKey'], (result) => {
+chrome.storage.local.get(['workerUrl', 'apiKey', 'openrouterKey'], (result) => {
   if (result.workerUrl) workerUrlInput.value = result.workerUrl
   if (result.apiKey) apiKeyInput.value = result.apiKey
+  if (result.openrouterKey) openrouterKeyInput.value = result.openrouterKey
 })
 
 form.addEventListener('submit', (e) => {
@@ -27,7 +29,8 @@ form.addEventListener('submit', (e) => {
     return
   }
 
-  chrome.storage.local.set({ workerUrl, apiKey }, () => {
+  const openrouterKey = openrouterKeyInput.value.trim()
+  chrome.storage.local.set({ workerUrl, apiKey, openrouterKey }, () => {
     settingsStatus.textContent = 'Settings saved!'
     setTimeout(() => { settingsStatus.textContent = '' }, 2000)
   })
