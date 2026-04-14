@@ -5,7 +5,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.target !== 'offscreen') return
 
   if (message.action === 'start-recording') {
-    startRecording(message.streamId).then(() => sendResponse({ ok: true })).catch(err => sendResponse({ error: err.message }))
+    startRecording(message.streamId, message.audio).then(() => sendResponse({ ok: true })).catch(err => sendResponse({ error: err.message }))
     return true
   }
 
@@ -19,9 +19,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 })
 
-async function startRecording(streamId) {
+async function startRecording(streamId, audio = false) {
   const stream = await navigator.mediaDevices.getUserMedia({
-    audio: true,
+    audio,
     video: {
       mandatory: {
         chromeMediaSource: 'tab',

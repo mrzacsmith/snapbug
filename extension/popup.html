@@ -17,7 +17,12 @@
       <a href="#" id="open-settings">Open Settings</a>
     </div>
     <button id="capture-btn">Capture Screenshot</button>
-    <button id="record-btn">Record Video</button>
+    <div class="record-row">
+      <button id="record-btn">Record Video</button>
+      <label id="audio-toggle" class="audio-toggle">
+        <input type="checkbox" id="audio-checkbox"> Sound
+      </label>
+    </div>
     <div id="recording-indicator" style="display:none;">
       <span id="rec-dot"></span>
       <span id="rec-timer">0:00</span>

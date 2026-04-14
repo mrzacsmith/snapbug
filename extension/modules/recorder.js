@@ -17,7 +17,7 @@ export function createRecorder(chrome, { maxDurationMs = DEFAULT_MAX_DURATION_MS
       return Date.now() - startedAt
     },
 
-    async start(tabId) {
+    async start(tabId, { audio = false } = {}) {
       if (recording) throw new Error('Already recording')
 
       const hasDoc = await chrome.offscreen.hasDocument()
@@ -35,7 +35,7 @@ export function createRecorder(chrome, { maxDurationMs = DEFAULT_MAX_DURATION_MS
 
       await new Promise((resolve, reject) => {
         chrome.runtime.sendMessage(
-          { target: 'offscreen', action: 'start-recording', streamId },
+          { target: 'offscreen', action: 'start-recording', streamId, audio },
           (res) => {
             if (res.error) reject(new Error(res.error))
             else resolve()

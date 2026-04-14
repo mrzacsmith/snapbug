@@ -8,6 +8,7 @@ const stopBtn = document.getElementById('stop-btn')
 const videoResult = document.getElementById('video-result')
 const copyUrlBtn = document.getElementById('copy-url-btn')
 const copyMdBtn = document.getElementById('copy-md-btn')
+const audioCheckbox = document.getElementById('audio-checkbox')
 const statusMsg = document.getElementById('status-msg')
 const warning = document.getElementById('unconfigured-warning')
 const openSettingsLink = document.getElementById('open-settings')
@@ -31,6 +32,15 @@ settingsLink.addEventListener('click', (e) => {
 updateBanner.addEventListener('click', (e) => {
   e.preventDefault()
   openSettings()
+})
+
+// Load audio preference
+chrome.storage.local.get('recordAudio', (result) => {
+  audioCheckbox.checked = result.recordAudio || false
+})
+
+audioCheckbox.addEventListener('change', () => {
+  chrome.storage.local.set({ recordAudio: audioCheckbox.checked })
 })
 
 // Check if configured on popup open
@@ -130,7 +140,7 @@ recordBtn.addEventListener('click', () => {
   recordBtn.disabled = true
   statusMsg.textContent = 'Starting recording...'
 
-  chrome.runtime.sendMessage({ action: 'start-recording' }, (response) => {
+  chrome.runtime.sendMessage({ action: 'start-recording', audio: audioCheckbox.checked }, (response) => {
     if (response?.error) {
       statusMsg.textContent = `Error: ${response.error}`
       recordBtn.disabled = false
