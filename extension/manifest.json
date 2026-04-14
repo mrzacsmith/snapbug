@@ -1,11 +1,13 @@
 {
   "manifest_version": 3,
   "name": "SnapBug",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "Capture, annotate, and upload screenshots for bug reports",
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "tabCapture",
+    "offscreen"
   ],
   "action": {
     "default_popup": "popup.html",
