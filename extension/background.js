@@ -12,7 +12,8 @@ async function uploadAndStoreResult(dataUrl, pageUrl) {
 
   const timestamp = new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC')
   const result = await uploadVideo(blob, { workerUrl, apiKey })
-  const watchUrl = result.url.replace(/\/([^/]+\.webm)$/, '/watch/$1')
+  const originEnd = result.url.indexOf('/', result.url.indexOf('//') + 2)
+  const watchUrl = result.url.slice(0, originEnd) + '/watch' + result.url.slice(originEnd)
   const clipboardText = formatVideoClipboardOutput({ videoUrl: watchUrl, pageUrl, timestamp })
 
   chrome.storage.local.set({

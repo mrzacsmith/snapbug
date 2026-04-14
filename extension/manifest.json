@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SnapBug",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "Capture, annotate, and upload screenshots for bug reports",
   "permissions": [
     "activeTab",
