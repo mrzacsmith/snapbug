@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import * as outputModule from './output.js'
-const { formatClipboardOutput } = outputModule
+const { formatClipboardOutput, formatVideoClipboardOutput } = outputModule
 
 describe('formatClipboardOutput', () => {
   it('formats markdown image tag only', () => {
@@ -81,5 +81,38 @@ describe('formatUrlOnly', () => {
       imageUrl: 'https://snap.workers.dev/2026/04/10/abc.png',
     })
     expect(result).toBe('https://snap.workers.dev/2026/04/10/abc.png')
+  })
+})
+
+describe('formatVideoClipboardOutput', () => {
+  it('formats video link (not image embed)', () => {
+    const result = formatVideoClipboardOutput({
+      videoUrl: 'https://snap.workers.dev/2026/04/10/abc.webm',
+    })
+    expect(result).toContain('https://snap.workers.dev/2026/04/10/abc.webm')
+    expect(result).not.toContain('![')
+  })
+
+  it('includes page URL when provided', () => {
+    const result = formatVideoClipboardOutput({
+      videoUrl: 'https://snap.workers.dev/2026/04/10/abc.webm',
+      pageUrl: 'https://app.example.com/dashboard',
+    })
+    expect(result).toContain('URL: https://app.example.com/dashboard')
+  })
+
+  it('includes timestamp when provided', () => {
+    const result = formatVideoClipboardOutput({
+      videoUrl: 'https://snap.workers.dev/2026/04/10/abc.webm',
+      timestamp: '2026-04-10 14:32 UTC',
+    })
+    expect(result).toContain('Recorded: 2026-04-10 14:32 UTC')
+  })
+
+  it('includes expiration notice', () => {
+    const result = formatVideoClipboardOutput({
+      videoUrl: 'https://snap.workers.dev/2026/04/10/abc.webm',
+    })
+    expect(result).toMatch(/expires|14 days/i)
   })
 })

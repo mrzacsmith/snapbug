@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { uploadScreenshot } from './upload.js'
+import { uploadScreenshot, uploadVideo } from './upload.js'
 
 describe('uploadScreenshot', () => {
   let mockFetch
@@ -70,5 +70,71 @@ describe('uploadScreenshot', () => {
     await expect(
       uploadScreenshot(blob, { workerUrl: 'https://snap.workers.dev', apiKey: 'key' })
     ).rejects.toThrow(/Network error/)
+  })
+})
+
+describe('uploadVideo', () => {
+  let mockFetch
+
+  beforeEach(() => {
+    mockFetch = vi.fn()
+    globalThis.fetch = mockFetch
+  })
+
+  it('sends WebM blob with correct headers and filename', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ url: 'https://snap.workers.dev/2026/04/10/abc.webm', key: '2026/04/10/abc.webm' }),
+    })
+
+    const blob = new Blob([new Uint8Array(100)], { type: 'video/webm' })
+    const result = await uploadVideo(blob, {
+      workerUrl: 'https://snap.workers.dev',
+      apiKey: 'test-key',
+    })
+
+    expect(mockFetch).toHaveBeenCalledOnce()
+    const [url, opts] = mockFetch.mock.calls[0]
+    expect(url).toBe('https://snap.workers.dev/upload')
+    expect(opts.method).toBe('POST')
+    expect(opts.headers['X-API-Key']).toBe('test-key')
+    expect(result.url).toMatch(/\.webm$/)
+  })
+
+  it('rejects videos over 100MB', async () => {
+    const blob = new Blob([new Uint8Array(100 * 1024 * 1024 + 1)], { type: 'video/webm' })
+    await expect(
+      uploadVideo(blob, { workerUrl: 'https://snap.workers.dev', apiKey: 'key' })
+    ).rejects.toThrow(/100MB/)
+  })
+
+  it('accepts video at exactly 100MB', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ url: 'https://snap.workers.dev/abc.webm', key: 'abc.webm' }),
+    })
+
+    const blob = new Blob([new Uint8Array(100 * 1024 * 1024)], { type: 'video/webm' })
+    const result = await uploadVideo(blob, {
+      workerUrl: 'https://snap.workers.dev',
+      apiKey: 'key',
+    })
+    expect(result.url).toBeDefined()
+  })
+
+  it('calls onProgress during upload', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ url: 'https://snap.workers.dev/abc.webm', key: 'abc.webm' }),
+    })
+
+    const blob = new Blob([new Uint8Array(100)], { type: 'video/webm' })
+    const onProgress = vi.fn()
+    await uploadVideo(blob, {
+      workerUrl: 'https://snap.workers.dev',
+      apiKey: 'key',
+      onProgress,
+    })
+    expect(onProgress).toHaveBeenCalled()
   })
 })
