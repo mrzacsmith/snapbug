@@ -5,3 +5,7 @@ compatibility_date = "2024-12-01"
 [[r2_buckets]]
 binding = "SCREENSHOTS"
 bucket_name = "screenshots"
+
+[[r2_buckets]]
+binding = "VIDEOS"
+bucket_name = "snapbug-videos"
