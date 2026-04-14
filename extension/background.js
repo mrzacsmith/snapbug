@@ -33,21 +33,14 @@ recorder.onAutoStop = async (dataUrl) => {
   if (recordingTabId) removeCursorHighlight(chrome, recordingTabId).catch(() => {})
   if (consoleActive && recordingTabId) {
     try {
-      const messages = await collectConsoleMessages(chrome, recordingTabId)
-      const output = formatConsoleMessages(messages)
+      const output = await getConsoleOutput(recordingTabId)
       if (output) chrome.storage.local.set({ pendingConsole: output })
       await removeConsoleCapture(chrome, recordingTabId).catch(() => {})
     } catch {}
     consoleActive = false
   }
-  chrome.storage.local.get('recordingPageUrl', (result) => {
-    uploadAndStoreResult(dataUrl, result.recordingPageUrl).then(({ watchUrl }) => {
-      chrome.action.setBadgeText({ text: 'DONE' })
-      chrome.action.setBadgeBackgroundColor({ color: '#38a169' })
-      setTimeout(() => chrome.action.setBadgeText({ text: '' }), 3000)
-    }).catch(() => {
-      chrome.storage.local.set({ pendingVideo: dataUrl })
-    })
+  chrome.storage.local.set({ pendingVideo: dataUrl }, () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('video-preview.html') })
   })
 }
 
@@ -83,11 +76,17 @@ chrome.commands.onCommand.addListener((command) => {
   if (command === 'toggle-recording') {
     if (recorder.isRecording()) {
       if (recordingTabId) removeCursorHighlight(chrome, recordingTabId).catch(() => {})
-      recorder.stop().then((dataUrl) => {
-        chrome.storage.local.get('recordingPageUrl', (result) => {
-          uploadAndStoreResult(dataUrl, result.recordingPageUrl).catch(() => {
-            chrome.storage.local.set({ pendingVideo: dataUrl })
-          })
+      recorder.stop().then(async (dataUrl) => {
+        let consoleOutput = ''
+        if (consoleActive && recordingTabId) {
+          try {
+            consoleOutput = await getConsoleOutput(recordingTabId)
+            await removeConsoleCapture(chrome, recordingTabId).catch(() => {})
+          } catch {}
+          consoleActive = false
+        }
+        chrome.storage.local.set({ pendingVideo: dataUrl, pendingConsole: consoleOutput || '' }, () => {
+          chrome.tabs.create({ url: chrome.runtime.getURL('video-preview.html') })
         })
       })
     } else {
@@ -154,19 +153,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         let consoleOutput = ''
         if (consoleActive && recordingTabId) {
           try {
-            const messages = await collectConsoleMessages(chrome, recordingTabId)
-            consoleOutput = formatConsoleMessages(messages)
+            consoleOutput = await getConsoleOutput(recordingTabId)
             await removeConsoleCapture(chrome, recordingTabId).catch(() => {})
           } catch {}
           consoleActive = false
         }
-        chrome.storage.local.get('recordingPageUrl', (result) => {
-          uploadAndStoreResult(dataUrl, result.recordingPageUrl)
-            .then(({ watchUrl, clipboardText }) => {
-              const fullClipboard = consoleOutput ? clipboardText + consoleOutput : clipboardText
-              sendResponse({ success: true, watchUrl, clipboardText: fullClipboard })
-            })
-            .catch((err) => sendResponse({ error: err.message }))
+        chrome.storage.local.set({ pendingVideo: dataUrl, pendingConsole: consoleOutput || '' }, () => {
+          chrome.tabs.create({ url: chrome.runtime.getURL('video-preview.html') }, () => {
+            sendResponse({ success: true, preview: true })
+          })
         })
       })
       .catch((err) => sendResponse({ error: err.message }))

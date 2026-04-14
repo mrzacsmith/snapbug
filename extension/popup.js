@@ -192,7 +192,7 @@ copyMdBtn.addEventListener('click', () => {
 
 stopBtn.addEventListener('click', () => {
   stopBtn.disabled = true
-  statusMsg.textContent = 'Stopping & uploading...'
+  statusMsg.textContent = 'Stopping...'
 
   chrome.runtime.sendMessage({ action: 'stop-recording' }, (response) => {
     hideRecordingUI()
@@ -201,14 +201,7 @@ stopBtn.addEventListener('click', () => {
       statusMsg.textContent = `Error: ${response.error}`
       return
     }
-    if (response?.watchUrl) {
-      navigator.clipboard.writeText(response.watchUrl).then(() => {
-        showVideoResult(response.watchUrl, response.clipboardText)
-      }).catch(() => {
-        showVideoResult(response.watchUrl, response.clipboardText)
-      })
-    } else {
-      statusMsg.textContent = 'Video uploaded!'
-    }
+    // Preview page opens in a new tab
+    window.close()
   })
 })
