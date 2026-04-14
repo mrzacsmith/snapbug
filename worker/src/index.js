@@ -1,5 +1,6 @@
 const ALLOWED_ORIGINS = [
   'chrome-extension://aafdgjcfokgognkkhhcmdajmkelghoob',
+  'chrome-extension://pccaffflmfehiidkgokbaljffommdnbk',
 ]
 
 function isAllowedOrigin(origin) {
