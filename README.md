@@ -187,3 +187,4 @@ worker/             Cloudflare Worker + R2
   src/index.js      POST /upload, GET /<key>, GET /watch/<key>, OPTIONS
   wrangler.toml     R2 bucket bindings (screenshots + videos)
 ```
+# autocsuite
