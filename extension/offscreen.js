@@ -21,7 +21,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
 async function startRecording(streamId) {
   const stream = await navigator.mediaDevices.getUserMedia({
-    audio: false,
+    audio: true,
     video: {
       mandatory: {
         chromeMediaSource: 'tab',
